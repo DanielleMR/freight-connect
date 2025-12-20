@@ -14,16 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fretes: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          destino: string | null
+          id: string
+          origem: string | null
+          produtor_id: string
+          quantidade_animais: number | null
+          status: Database["public"]["Enums"]["frete_status"]
+          transportador_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          destino?: string | null
+          id?: string
+          origem?: string | null
+          produtor_id: string
+          quantidade_animais?: number | null
+          status?: Database["public"]["Enums"]["frete_status"]
+          transportador_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          destino?: string | null
+          id?: string
+          origem?: string | null
+          produtor_id?: string
+          quantidade_animais?: number | null
+          status?: Database["public"]["Enums"]["frete_status"]
+          transportador_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fretes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transportadores: {
+        Row: {
+          capacidade_animais: number | null
+          created_at: string | null
+          id: string
+          nome: string
+          placa_veiculo: string | null
+          telefone: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          capacidade_animais?: number | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          placa_veiculo?: string | null
+          telefone: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          capacidade_animais?: number | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          placa_veiculo?: string | null
+          telefone?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "produtor" | "transportador"
+      frete_status:
+        | "solicitado"
+        | "aceito"
+        | "recusado"
+        | "em_andamento"
+        | "concluido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +259,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "produtor", "transportador"],
+      frete_status: [
+        "solicitado",
+        "aceito",
+        "recusado",
+        "em_andamento",
+        "concluido",
+      ],
+    },
   },
 } as const
