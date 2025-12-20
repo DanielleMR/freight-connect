@@ -1,13 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Helmet } from "react-helmet-async";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import HeroSection from "@/components/sections/HeroSection";
+import HowItWorksSection from "@/components/sections/HowItWorksSection";
+import FeaturesSection from "@/components/sections/FeaturesSection";
+import CTASection from "@/components/sections/CTASection";
 
+/**
+ * Index - Página principal (Landing Page)
+ * Estrutura completa da página inicial do FreteBoi
+ */
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <>
+      <Helmet>
+        <title>FreteBoi - Transporte de Gado Simples e Seguro</title>
+        <meta 
+          name="description" 
+          content="Conectamos produtores rurais aos melhores transportadores de gado do Brasil. Cotação rápida, segura e com o melhor preço." 
+        />
+        <meta name="keywords" content="frete boiadeiro, transporte de gado, caminhão boiadeiro, frete de animais" />
+      </Helmet>
+
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1">
+          <HeroSection />
+          <HowItWorksSection />
+          <FeaturesSection />
+          <CTASection />
+        </main>
+        <Footer />
       </div>
-    </div>
+    </>
   );
 };
 
