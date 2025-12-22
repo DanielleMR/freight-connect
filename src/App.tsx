@@ -6,13 +6,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import Transportadores from "./pages/Transportadores";
+import SolicitarFrete from "./pages/SolicitarFrete";
+import Fretes from "./pages/Fretes";
 
 const queryClient = new QueryClient();
 
-/**
- * App - Componente raiz da aplicação
- * Configura providers e rotas principais
- */
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
@@ -22,7 +22,10 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            {/* Adicionar novas rotas acima da rota catch-all */}
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/transportadores" element={<Transportadores />} />
+            <Route path="/solicitar-frete/:transportadorId" element={<SolicitarFrete />} />
+            <Route path="/fretes" element={<Fretes />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
