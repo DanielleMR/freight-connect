@@ -1,0 +1,184 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      console.log('Auth error:', authError)
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const url = new URL(req.url)
+    const id = url.searchParams.get('id')
+
+    // GET - List or get single transportador
+    if (req.method === 'GET') {
+      console.log('GET transportadores request')
+      if (id) {
+        const { data, error } = await supabase
+          .from('transportadores')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (error) {
+          console.log('Error fetching transportador:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const { data, error } = await supabase
+        .from('transportadores')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.log('Error listing transportadores:', error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // POST - Create transportador (admin only via RLS)
+    if (req.method === 'POST') {
+      console.log('POST transportador request')
+      const body = await req.json()
+      
+      const { data, error } = await supabase
+        .from('transportadores')
+        .insert({
+          nome: body.nome,
+          telefone: body.telefone,
+          placa_veiculo: body.placa_veiculo,
+          capacidade_animais: body.capacidade_animais,
+          user_id: body.user_id,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.log('Error creating transportador:', error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      return new Response(JSON.stringify(data), {
+        status: 201,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // PUT - Update transportador (admin only via RLS)
+    if (req.method === 'PUT') {
+      console.log('PUT transportador request')
+      if (!id) {
+        return new Response(JSON.stringify({ error: 'ID required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const body = await req.json()
+      
+      const { data, error } = await supabase
+        .from('transportadores')
+        .update({
+          nome: body.nome,
+          telefone: body.telefone,
+          placa_veiculo: body.placa_veiculo,
+          capacidade_animais: body.capacidade_animais,
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.log('Error updating transportador:', error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // DELETE - Delete transportador (admin only via RLS)
+    if (req.method === 'DELETE') {
+      console.log('DELETE transportador request')
+      if (!id) {
+        return new Response(JSON.stringify({ error: 'ID required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const { error } = await supabase
+        .from('transportadores')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        console.log('Error deleting transportador:', error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    console.log('Unexpected error:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+})
