@@ -10,6 +10,10 @@ import Auth from "./pages/Auth";
 import Transportadores from "./pages/Transportadores";
 import SolicitarFrete from "./pages/SolicitarFrete";
 import Fretes from "./pages/Fretes";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminTransportadores from "./pages/admin/AdminTransportadores";
+import AdminProdutores from "./pages/admin/AdminProdutores";
+import AdminFretes from "./pages/admin/AdminFretes";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +30,10 @@ const App = () => (
             <Route path="/transportadores" element={<Transportadores />} />
             <Route path="/solicitar-frete/:transportadorId" element={<SolicitarFrete />} />
             <Route path="/fretes" element={<Fretes />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/transportadores" element={<AdminTransportadores />} />
+            <Route path="/admin/produtores" element={<AdminProdutores />} />
+            <Route path="/admin/fretes" element={<AdminFretes />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -61,8 +61,27 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       transportadores: {
         Row: {
+          ativo: boolean
           capacidade_animais: number | null
           created_at: string | null
           id: string
@@ -73,6 +92,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ativo?: boolean
           capacidade_animais?: number | null
           created_at?: string | null
           id?: string
@@ -83,6 +103,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ativo?: boolean
           capacidade_animais?: number | null
           created_at?: string | null
           id?: string
