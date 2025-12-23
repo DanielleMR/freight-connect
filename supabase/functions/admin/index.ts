@@ -91,6 +91,34 @@ serve(async (req) => {
       });
     }
 
+    // PUT /admin/transportadores/:id - Update transportador
+    if (method === 'PUT') {
+      const pathParts = url.pathname.split('/');
+      const transportadorId = pathParts[pathParts.length - 1];
+      
+      if (transportadorId && transportadorId !== 'transportadores') {
+        const body = await req.json();
+        const { telefone, placa_veiculo, capacidade_animais, regiao_atendimento } = body;
+
+        const { data, error } = await supabaseClient
+          .from('transportadores')
+          .update({ 
+            telefone, 
+            placa_veiculo, 
+            capacidade_animais, 
+            regiao_atendimento 
+          })
+          .eq('id', transportadorId)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // PATCH /admin/transportadores/:id/toggle - Activate/Deactivate transportador
     if (path === 'toggle' && method === 'PATCH') {
       const transportadorId = url.pathname.split('/').slice(-2, -1)[0];
