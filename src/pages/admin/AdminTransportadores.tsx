@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,13 +23,9 @@ interface Transportador {
 }
 
 const AdminTransportadores = () => {
+  const navigate = useNavigate();
   const [transportadores, setTransportadores] = useState<Transportador[]>([]);
   const [loading, setLoading] = useState(true);
-  const [nome, setNome] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [placaVeiculo, setPlacaVeiculo] = useState("");
-  const [capacidadeAnimais, setCapacidadeAnimais] = useState("");
-  const [regiaoAtendimento, setRegiaoAtendimento] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Edit modal state
@@ -60,38 +57,6 @@ const AdminTransportadores = () => {
   useEffect(() => {
     fetchTransportadores();
   }, []);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      const response = await supabase.functions.invoke('admin/transportadores', {
-        method: 'POST',
-        body: {
-          nome,
-          telefone,
-          placa_veiculo: placaVeiculo || null,
-          capacidade_animais: capacidadeAnimais ? parseInt(capacidadeAnimais) : null,
-          regiao_atendimento: regiaoAtendimento || null,
-        },
-      });
-
-      if (response.error) throw response.error;
-
-      toast.success("Transportador criado com sucesso!");
-      setNome("");
-      setTelefone("");
-      setPlacaVeiculo("");
-      setCapacidadeAnimais("");
-      setRegiaoAtendimento("");
-      fetchTransportadores();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleToggle = async (id: string) => {
     try {
@@ -149,63 +114,12 @@ const AdminTransportadores = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Novo Transportador</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome *</Label>
-                <Input
-                  id="nome"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone *</Label>
-                <Input
-                  id="telefone"
-                  value={telefone}
-                  onChange={(e) => setTelefone(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="placa">Placa do Veículo</Label>
-                <Input
-                  id="placa"
-                  value={placaVeiculo}
-                  onChange={(e) => setPlacaVeiculo(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="capacidade">Capacidade de Animais</Label>
-                <Input
-                  id="capacidade"
-                  type="number"
-                  value={capacidadeAnimais}
-                  onChange={(e) => setCapacidadeAnimais(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="regiao">Região de Atendimento</Label>
-                <Input
-                  id="regiao"
-                  value={regiaoAtendimento}
-                  onChange={(e) => setRegiaoAtendimento(e.target.value)}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Criando..." : "Criar Transportador"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Transportadores</h2>
+          <Button onClick={() => navigate("/admin/transportadores/novo")}>
+            Cadastrar Transportador
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>

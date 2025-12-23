@@ -12,6 +12,7 @@ import SolicitarFrete from "./pages/SolicitarFrete";
 import Fretes from "./pages/Fretes";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminTransportadores from "./pages/admin/AdminTransportadores";
+import AdminTransportadorNovo from "./pages/admin/AdminTransportadorNovo";
 import AdminProdutores from "./pages/admin/AdminProdutores";
 import AdminFretes from "./pages/admin/AdminFretes";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/fretes" element={<Fretes />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/transportadores" element={<AdminTransportadores />} />
+            <Route path="/admin/transportadores/novo" element={<AdminTransportadorNovo />} />
             <Route path="/admin/produtores" element={<AdminProdutores />} />
             <Route path="/admin/fretes" element={<AdminFretes />} />
             <Route path="*" element={<NotFound />} />
