@@ -87,6 +87,7 @@ export type Database = {
           id: string
           nome: string
           placa_veiculo: string | null
+          regiao_atendimento: string | null
           telefone: string
           updated_at: string | null
           user_id: string | null
@@ -98,6 +99,7 @@ export type Database = {
           id?: string
           nome: string
           placa_veiculo?: string | null
+          regiao_atendimento?: string | null
           telefone: string
           updated_at?: string | null
           user_id?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           id?: string
           nome?: string
           placa_veiculo?: string | null
+          regiao_atendimento?: string | null
           telefone?: string
           updated_at?: string | null
           user_id?: string | null
