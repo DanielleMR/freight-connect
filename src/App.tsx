@@ -15,6 +15,9 @@ import AdminTransportadores from "./pages/admin/AdminTransportadores";
 import AdminTransportadorNovo from "./pages/admin/AdminTransportadorNovo";
 import AdminProdutores from "./pages/admin/AdminProdutores";
 import AdminFretes from "./pages/admin/AdminFretes";
+import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
+import ProdutorPainel from "./pages/produtor/ProdutorPainel";
+import MapaTransportadores from "./pages/mapa/MapaTransportadores";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +39,9 @@ const App = () => (
             <Route path="/admin/transportadores/novo" element={<AdminTransportadorNovo />} />
             <Route path="/admin/produtores" element={<AdminProdutores />} />
             <Route path="/admin/fretes" element={<AdminFretes />} />
+            <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
+            <Route path="/produtor/painel" element={<ProdutorPainel />} />
+            <Route path="/mapa/transportadores" element={<MapaTransportadores />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -61,6 +61,42 @@ export type Database = {
           },
         ]
       }
+      produtores: {
+        Row: {
+          cidade: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          estado: string | null
+          id: string
+          nome: string
+          telefone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cidade?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          nome: string
+          telefone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cidade?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          nome?: string
+          telefone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -85,10 +121,14 @@ export type Database = {
           capacidade_animais: number | null
           created_at: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           nome: string
           placa_veiculo: string | null
           regiao_atendimento: string | null
           telefone: string
+          tipo_animal: string | null
+          tipo_caminhao: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -97,10 +137,14 @@ export type Database = {
           capacidade_animais?: number | null
           created_at?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           nome: string
           placa_veiculo?: string | null
           regiao_atendimento?: string | null
           telefone: string
+          tipo_animal?: string | null
+          tipo_caminhao?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -109,10 +153,14 @@ export type Database = {
           capacidade_animais?: number | null
           created_at?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           nome?: string
           placa_veiculo?: string | null
           regiao_atendimento?: string | null
           telefone?: string
+          tipo_animal?: string | null
+          tipo_caminhao?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
