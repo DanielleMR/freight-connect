@@ -5,6 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Sanitized logging helper - never logs PII or sensitive details
+function logSafely(level: 'info' | 'warn' | 'error', context: string, metadata?: Record<string, string | number | boolean>) {
+  const sanitized = {
+    timestamp: new Date().toISOString(),
+    context,
+    ...metadata
+  };
+  console[level](JSON.stringify(sanitized));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -23,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      console.log('Auth error:', authError)
+      logSafely('warn', 'AUTH_FAILED', { reason: 'invalid_or_missing_token' })
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -35,7 +45,7 @@ Deno.serve(async (req) => {
 
     // GET - List or get single transportador
     if (req.method === 'GET') {
-      console.log('GET transportadores request')
+      logSafely('info', 'TRANSPORTADORES_GET', { hasId: !!id })
       if (id) {
         const { data, error } = await supabase
           .from('transportadores')
@@ -44,7 +54,7 @@ Deno.serve(async (req) => {
           .single()
 
         if (error) {
-          console.log('Error fetching transportador:', error)
+          logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'transportadores' })
           return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -62,7 +72,7 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.log('Error listing transportadores:', error)
+        logSafely('error', 'DB_ERROR', { operation: 'SELECT_LIST', table: 'transportadores' })
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -76,7 +86,7 @@ Deno.serve(async (req) => {
 
     // POST - Create transportador (admin only via RLS)
     if (req.method === 'POST') {
-      console.log('POST transportador request')
+      logSafely('info', 'TRANSPORTADORES_POST')
       const body = await req.json()
       
       const { data, error } = await supabase
@@ -92,7 +102,7 @@ Deno.serve(async (req) => {
         .single()
 
       if (error) {
-        console.log('Error creating transportador:', error)
+        logSafely('error', 'DB_ERROR', { operation: 'INSERT', table: 'transportadores' })
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -107,7 +117,7 @@ Deno.serve(async (req) => {
 
     // PUT - Update transportador (admin only via RLS)
     if (req.method === 'PUT') {
-      console.log('PUT transportador request')
+      logSafely('info', 'TRANSPORTADORES_PUT', { hasId: !!id })
       if (!id) {
         return new Response(JSON.stringify({ error: 'ID required' }), {
           status: 400,
@@ -130,7 +140,7 @@ Deno.serve(async (req) => {
         .single()
 
       if (error) {
-        console.log('Error updating transportador:', error)
+        logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'transportadores' })
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -144,7 +154,7 @@ Deno.serve(async (req) => {
 
     // DELETE - Delete transportador (admin only via RLS)
     if (req.method === 'DELETE') {
-      console.log('DELETE transportador request')
+      logSafely('info', 'TRANSPORTADORES_DELETE', { hasId: !!id })
       if (!id) {
         return new Response(JSON.stringify({ error: 'ID required' }), {
           status: 400,
@@ -158,7 +168,7 @@ Deno.serve(async (req) => {
         .eq('id', id)
 
       if (error) {
-        console.log('Error deleting transportador:', error)
+        logSafely('error', 'DB_ERROR', { operation: 'DELETE', table: 'transportadores' })
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -175,7 +185,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    console.log('Unexpected error:', error)
+    logSafely('error', 'UNEXPECTED_ERROR', { type: 'internal' })
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

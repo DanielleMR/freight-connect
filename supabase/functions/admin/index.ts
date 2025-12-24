@@ -6,6 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Sanitized logging helper - never logs PII or sensitive details
+function logSafely(level: 'info' | 'warn' | 'error', context: string, metadata?: Record<string, string | number | boolean>) {
+  const sanitized = {
+    timestamp: new Date().toISOString(),
+    context,
+    ...metadata
+  };
+  console[level](JSON.stringify(sanitized));
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,6 +28,7 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      logSafely('warn', 'AUTH_MISSING_HEADER');
       return new Response(JSON.stringify({ error: 'Não autorizado' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -28,6 +39,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
+      logSafely('warn', 'AUTH_INVALID_TOKEN');
       return new Response(JSON.stringify({ error: 'Token inválido' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -43,6 +55,7 @@ serve(async (req) => {
       .single();
 
     if (!roleData) {
+      logSafely('warn', 'AUTH_ACCESS_DENIED', { reason: 'not_admin' });
       return new Response(JSON.stringify({ error: 'Acesso negado. Apenas administradores.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -53,6 +66,8 @@ serve(async (req) => {
     const path = url.pathname.split('/').pop();
     const method = req.method;
 
+    logSafely('info', 'ADMIN_REQUEST', { path: path || 'unknown', method });
+
     // GET /admin/transportadores - List all transportadores
     if (path === 'transportadores' && method === 'GET') {
       const { data, error } = await supabaseClient
@@ -60,7 +75,10 @@ serve(async (req) => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'transportadores' });
+        throw error;
+      }
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -84,7 +102,10 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        logSafely('error', 'DB_ERROR', { operation: 'INSERT', table: 'transportadores' });
+        throw error;
+      }
       return new Response(JSON.stringify(data), {
         status: 201,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -112,7 +133,10 @@ serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'transportadores' });
+          throw error;
+        }
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -130,7 +154,10 @@ serve(async (req) => {
         .eq('id', transportadorId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'transportadores' });
+        throw fetchError;
+      }
 
       // Toggle status
       const { data, error } = await supabaseClient
@@ -140,7 +167,10 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'transportadores' });
+        throw error;
+      }
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -161,7 +191,10 @@ serve(async (req) => {
         `)
         .eq('role', 'produtor');
 
-      if (error) throw error;
+      if (error) {
+        logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'user_roles' });
+        throw error;
+      }
       
       const produtores = data?.map(item => ({
         id: item.user_id,
@@ -189,7 +222,10 @@ serve(async (req) => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'fretes' });
+        throw error;
+      }
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -201,7 +237,7 @@ serve(async (req) => {
     });
 
   } catch (error: unknown) {
-    console.error('Admin function error:', error);
+    logSafely('error', 'ADMIN_FUNCTION_ERROR', { type: 'internal' });
     const message = error instanceof Error ? error.message : 'Erro interno';
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
