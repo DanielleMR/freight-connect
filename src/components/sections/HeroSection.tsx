@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Clock, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /**
  * HeroSection - Seção principal da landing page
  * Apresenta a proposta de valor e CTAs principais
  */
 const HeroSection = () => {
+  const navigate = useNavigate();
+  
   const features = [
     { icon: Shield, text: "Transportadores Verificados" },
     { icon: Clock, text: "Cotação em Minutos" },
@@ -49,11 +52,11 @@ const HeroSection = () => {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12 animate-fade-in-up animation-delay-300">
-              <Button variant="hero" size="xl">
-                Solicitar Frete
+              <Button variant="hero" size="xl" onClick={() => navigate("/produtor/cadastro")}>
+                Sou Produtor
                 <ArrowRight className="w-5 h-5" />
               </Button>
-              <Button variant="hero-outline" size="xl">
+              <Button variant="hero-outline" size="xl" onClick={() => navigate("/auth")}>
                 Sou Transportador
               </Button>
             </div>
