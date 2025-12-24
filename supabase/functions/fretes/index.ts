@@ -5,6 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Sanitized logging helper - never logs PII or sensitive details
+function logSafely(level: 'info' | 'warn' | 'error', context: string, metadata?: Record<string, string | number | boolean>) {
+  const sanitized = {
+    timestamp: new Date().toISOString(),
+    context,
+    ...metadata
+  };
+  console[level](JSON.stringify(sanitized));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -23,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      console.log('Auth error:', authError)
+      logSafely('warn', 'AUTH_FAILED', { reason: 'invalid_or_missing_token' })
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -36,7 +46,7 @@ Deno.serve(async (req) => {
 
     // GET - List fretes for the user
     if (req.method === 'GET') {
-      console.log('GET fretes request for user:', user.id)
+      logSafely('info', 'FRETES_GET', { hasId: !!id })
       
       if (id) {
         const { data, error } = await supabase
@@ -46,7 +56,7 @@ Deno.serve(async (req) => {
           .single()
 
         if (error) {
-          console.log('Error fetching frete:', error)
+          logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'fretes' })
           return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -64,7 +74,7 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.log('Error listing fretes:', error)
+        logSafely('error', 'DB_ERROR', { operation: 'SELECT_LIST', table: 'fretes' })
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -78,7 +88,7 @@ Deno.serve(async (req) => {
 
     // POST - Create frete (produtor only via RLS)
     if (req.method === 'POST') {
-      console.log('POST frete request')
+      logSafely('info', 'FRETES_POST')
       const body = await req.json()
       
       const { data, error } = await supabase
@@ -96,7 +106,7 @@ Deno.serve(async (req) => {
         .single()
 
       if (error) {
-        console.log('Error creating frete:', error)
+        logSafely('error', 'DB_ERROR', { operation: 'INSERT', table: 'fretes' })
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -111,7 +121,7 @@ Deno.serve(async (req) => {
 
     // PUT - Update frete status (transportador: accept/reject)
     if (req.method === 'PUT') {
-      console.log('PUT frete request, action:', action)
+      logSafely('info', 'FRETES_PUT', { hasAction: !!action })
       if (!id) {
         return new Response(JSON.stringify({ error: 'ID required' }), {
           status: 400,
@@ -139,7 +149,7 @@ Deno.serve(async (req) => {
         .single()
 
       if (error) {
-        console.log('Error updating frete:', error)
+        logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'fretes' })
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -156,7 +166,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    console.log('Unexpected error:', error)
+    logSafely('error', 'UNEXPECTED_ERROR', { type: 'internal' })
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
