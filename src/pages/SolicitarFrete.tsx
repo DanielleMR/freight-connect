@@ -62,10 +62,23 @@ export default function SolicitarFrete() {
       return;
     }
 
+    // Buscar o ID do produtor na tabela produtores
+    const { data: produtorData, error: produtorError } = await supabase
+      .from('produtores')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (produtorError || !produtorData) {
+      toast({ title: 'Erro', description: 'Você precisa ter um cadastro de produtor', variant: 'destructive' });
+      setSubmitting(false);
+      return;
+    }
+
     const { error } = await supabase
       .from('fretes')
       .insert({
-        produtor_id: user.id,
+        produtor_id: produtorData.id,
         transportador_id: transportadorId!,
         origem,
         destino,
@@ -74,7 +87,6 @@ export default function SolicitarFrete() {
       });
 
     if (error) {
-      console.error('Error creating frete:', error);
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Frete solicitado com sucesso!' });

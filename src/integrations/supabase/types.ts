@@ -189,6 +189,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_produtor_name: { Args: { produtor_uuid: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
