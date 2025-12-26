@@ -8,7 +8,7 @@ import { ArrowRight, Truck } from "lucide-react";
  */
 const CTASection = forwardRef<HTMLElement>((_, ref) => {
   return (
-    <section id="contato" className="py-20 md:py-32 relative overflow-hidden">
+    <section ref={ref} id="contato" className="py-20 md:py-32 relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-hero" />
       
