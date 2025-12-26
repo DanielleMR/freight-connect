@@ -1,14 +1,15 @@
+import { forwardRef } from "react";
 import { Truck, MapPin, Phone, Mail } from "lucide-react";
 
 /**
  * Footer - Rodapé do site
  * Contém informações de contato, links úteis e copyright
  */
-const Footer = () => {
+const Footer = forwardRef<HTMLElement>((_, ref) => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-foreground text-primary-foreground">
+    <footer ref={ref} className="bg-foreground text-primary-foreground">
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Logo e Descrição */}
@@ -89,6 +90,8 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = "Footer";
 
 export default Footer;

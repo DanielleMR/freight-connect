@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Truck } from "lucide-react";
 
@@ -5,7 +6,7 @@ import { ArrowRight, Truck } from "lucide-react";
  * CTASection - Seção de chamada para ação final
  * Incentiva o usuário a se cadastrar na plataforma
  */
-const CTASection = () => {
+const CTASection = forwardRef<HTMLElement>((_, ref) => {
   return (
     <section id="contato" className="py-20 md:py-32 relative overflow-hidden">
       {/* Background */}
@@ -66,6 +67,8 @@ const CTASection = () => {
       </div>
     </section>
   );
-};
+});
+
+CTASection.displayName = "CTASection";
 
 export default CTASection;
