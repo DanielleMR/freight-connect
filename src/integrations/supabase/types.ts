@@ -14,9 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      auditoria: {
+        Row: {
+          acao: string
+          created_at: string | null
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          registro_id: string | null
+          tabela: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string | null
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          registro_id?: string | null
+          tabela: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string | null
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          registro_id?: string | null
+          tabela?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      avaliacoes: {
+        Row: {
+          comentario: string | null
+          created_at: string | null
+          frete_id: string
+          id: string
+          nota: number
+          produtor_id: string
+          transportador_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          created_at?: string | null
+          frete_id: string
+          id?: string
+          nota: number
+          produtor_id: string
+          transportador_id: string
+        }
+        Update: {
+          comentario?: string | null
+          created_at?: string | null
+          frete_id?: string
+          id?: string
+          nota?: number
+          produtor_id?: string
+          transportador_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_frete_id_fkey"
+            columns: ["frete_id"]
+            isOneToOne: true
+            referencedRelation: "fretes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fretes: {
         Row: {
           created_at: string | null
+          data_prevista: string | null
           descricao: string | null
           destino: string | null
           id: string
@@ -24,11 +106,14 @@ export type Database = {
           produtor_id: string
           quantidade_animais: number | null
           status: Database["public"]["Enums"]["frete_status"]
+          tipo_animal: string | null
           transportador_id: string
           updated_at: string | null
+          valor_frete: number | null
         }
         Insert: {
           created_at?: string | null
+          data_prevista?: string | null
           descricao?: string | null
           destino?: string | null
           id?: string
@@ -36,11 +121,14 @@ export type Database = {
           produtor_id: string
           quantidade_animais?: number | null
           status?: Database["public"]["Enums"]["frete_status"]
+          tipo_animal?: string | null
           transportador_id: string
           updated_at?: string | null
+          valor_frete?: number | null
         }
         Update: {
           created_at?: string | null
+          data_prevista?: string | null
           descricao?: string | null
           destino?: string | null
           id?: string
@@ -48,8 +136,10 @@ export type Database = {
           produtor_id?: string
           quantidade_animais?: number | null
           status?: Database["public"]["Enums"]["frete_status"]
+          tipo_animal?: string | null
           transportador_id?: string
           updated_at?: string | null
+          valor_frete?: number | null
         }
         Relationships: [
           {
@@ -60,6 +150,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notificacoes: {
+        Row: {
+          created_at: string | null
+          id: string
+          lida: boolean | null
+          mensagem: string | null
+          referencia_id: string | null
+          referencia_tipo: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          mensagem?: string | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lida?: boolean | null
+          mensagem?: string | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       produtores: {
         Row: {
@@ -119,6 +245,7 @@ export type Database = {
         Row: {
           ativo: boolean
           capacidade_animais: number | null
+          cpf_cnpj: string | null
           created_at: string | null
           id: string
           latitude: number | null
@@ -131,10 +258,12 @@ export type Database = {
           tipo_caminhao: string | null
           updated_at: string | null
           user_id: string | null
+          whatsapp: string | null
         }
         Insert: {
           ativo?: boolean
           capacidade_animais?: number | null
+          cpf_cnpj?: string | null
           created_at?: string | null
           id?: string
           latitude?: number | null
@@ -147,10 +276,12 @@ export type Database = {
           tipo_caminhao?: string | null
           updated_at?: string | null
           user_id?: string | null
+          whatsapp?: string | null
         }
         Update: {
           ativo?: boolean
           capacidade_animais?: number | null
+          cpf_cnpj?: string | null
           created_at?: string | null
           id?: string
           latitude?: number | null
@@ -163,6 +294,7 @@ export type Database = {
           tipo_caminhao?: string | null
           updated_at?: string | null
           user_id?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -189,6 +321,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      criar_notificacao: {
+        Args: {
+          p_mensagem?: string
+          p_referencia_id?: string
+          p_referencia_tipo?: string
+          p_tipo: string
+          p_titulo: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       get_produtor_name: { Args: { produtor_uuid: string }; Returns: string }
       has_role: {
         Args: {
@@ -196,6 +339,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      registrar_auditoria: {
+        Args: {
+          p_acao: string
+          p_dados_anteriores?: Json
+          p_dados_novos?: Json
+          p_registro_id?: string
+          p_tabela: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
