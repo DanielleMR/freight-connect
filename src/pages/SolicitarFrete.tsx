@@ -6,13 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Calendar, DollarSign, Truck } from 'lucide-react';
 
 interface Transportador {
   id: string;
   nome: string;
   telefone: string;
+  capacidade_animais: number | null;
+  tipo_animal: string | null;
 }
+
+const tiposAnimal = [
+  { value: "bovino", label: "Bovino" },
+  { value: "suino", label: "Suíno" },
+  { value: "equino", label: "Equino" },
+  { value: "ovino", label: "Ovino" },
+  { value: "caprino", label: "Caprino" }
+];
 
 export default function SolicitarFrete() {
   const { transportadorId } = useParams();
@@ -27,6 +39,9 @@ export default function SolicitarFrete() {
   const [destino, setDestino] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [valorFrete, setValorFrete] = useState('');
+  const [dataPrevista, setDataPrevista] = useState('');
+  const [tipoAnimal, setTipoAnimal] = useState('');
 
   useEffect(() => {
     if (transportadorId) {
@@ -37,7 +52,7 @@ export default function SolicitarFrete() {
   const fetchTransportador = async () => {
     const { data, error } = await supabase
       .from('transportadores')
-      .select('id, nome, telefone')
+      .select('id, nome, telefone, capacidade_animais, tipo_animal')
       .eq('id', transportadorId)
       .single();
 
@@ -47,12 +62,26 @@ export default function SolicitarFrete() {
       navigate('/transportadores');
     } else {
       setTransportador(data);
+      if (data.tipo_animal) {
+        setTipoAnimal(data.tipo_animal);
+      }
     }
     setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!tipoAnimal) {
+      toast({ title: 'Erro', description: 'Selecione o tipo de animal', variant: 'destructive' });
+      return;
+    }
+    
+    if (!dataPrevista) {
+      toast({ title: 'Erro', description: 'Informe a data prevista do transporte', variant: 'destructive' });
+      return;
+    }
+    
     setSubmitting(true);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -62,7 +91,6 @@ export default function SolicitarFrete() {
       return;
     }
 
-    // Buscar o ID do produtor na tabela produtores
     const { data: produtorData, error: produtorError } = await supabase
       .from('produtores')
       .select('id')
@@ -84,80 +112,154 @@ export default function SolicitarFrete() {
         destino,
         quantidade_animais: parseInt(quantidade) || null,
         descricao,
+        valor_frete: parseFloat(valorFrete) || null,
+        data_prevista: dataPrevista || null,
+        tipo_animal: tipoAnimal
       });
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Frete solicitado com sucesso!' });
-      navigate('/fretes');
+      navigate('/produtor/painel');
     }
     setSubmitting(false);
   };
 
   if (loading) {
-    return <div className="p-4">Carregando...</div>;
+    return <div className="p-4 flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>Solicitar Frete</CardTitle>
-          {transportador && (
-            <p className="text-muted-foreground">
-              Transportador: {transportador.nome}
-            </p>
-          )}
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="origem">Origem</Label>
-              <Input
-                id="origem"
-                value={origem}
-                onChange={(e) => setOrigem(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="destino">Destino</Label>
-              <Input
-                id="destino"
-                value={destino}
-                onChange={(e) => setDestino(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantidade">Quantidade de Animais</Label>
-              <Input
-                id="quantidade"
-                type="number"
-                value={quantidade}
-                onChange={(e) => setQuantidade(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="descricao">Descrição</Label>
-              <Textarea
-                id="descricao"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Enviando...' : 'Solicitar'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-lg mx-auto">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Solicitar Frete
+            </CardTitle>
+            {transportador && (
+              <div className="text-sm text-muted-foreground">
+                <p><strong>Transportador:</strong> {transportador.nome}</p>
+                {transportador.capacidade_animais && (
+                  <p><strong>Capacidade:</strong> até {transportador.capacidade_animais} animais</p>
+                )}
+              </div>
+            )}
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="origem">Origem *</Label>
+                  <Input
+                    id="origem"
+                    placeholder="Cidade/Estado de origem"
+                    value={origem}
+                    onChange={(e) => setOrigem(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="destino">Destino *</Label>
+                  <Input
+                    id="destino"
+                    placeholder="Cidade/Estado de destino"
+                    value={destino}
+                    onChange={(e) => setDestino(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tipoAnimal">Tipo de Animal *</Label>
+                <Select value={tipoAnimal} onValueChange={setTipoAnimal}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo de animal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiposAnimal.map((tipo) => (
+                      <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantidade">Quantidade de Animais *</Label>
+                  <Input
+                    id="quantidade"
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 20"
+                    value={quantidade}
+                    onChange={(e) => setQuantidade(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="valorFrete" className="flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    Valor do Frete (R$)
+                  </Label>
+                  <Input
+                    id="valorFrete"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Ex: 1500.00"
+                    value={valorFrete}
+                    onChange={(e) => setValorFrete(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dataPrevista" className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  Data Prevista *
+                </Label>
+                <Input
+                  id="dataPrevista"
+                  type="date"
+                  value={dataPrevista}
+                  onChange={(e) => setDataPrevista(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="descricao">Observações</Label>
+                <Textarea
+                  id="descricao"
+                  placeholder="Informações adicionais sobre o frete..."
+                  value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting} className="flex-1">
+                  {submitting ? 'Enviando...' : 'Solicitar Frete'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -2,154 +2,305 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { StarRating } from '@/components/ui/star-rating';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck } from 'lucide-react';
+import { Database } from '@/integrations/supabase/types';
+
+type FreteStatus = Database['public']['Enums']['frete_status'];
 
 interface Frete {
   id: string;
-  status: string;
+  status: FreteStatus;
   origem: string | null;
   destino: string | null;
   quantidade_animais: number | null;
   descricao: string | null;
+  tipo_animal: string | null;
+  valor_frete: number | null;
+  data_prevista: string | null;
   created_at: string;
+  produtor_id: string;
   transportadores: {
     id: string;
     nome: string;
     telefone: string;
+    whatsapp: string | null;
   } | null;
 }
 
 export default function Fretes() {
   const [fretes, setFretes] = useState<Frete[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [produtorId, setProdutorId] = useState<string | null>(null);
+  const [avaliacaoDialog, setAvaliacaoDialog] = useState<string | null>(null);
+  const [nota, setNota] = useState(5);
+  const [comentario, setComentario] = useState('');
+  const [submittingAvaliacao, setSubmittingAvaliacao] = useState(false);
+  const [avaliacoesExistentes, setAvaliacoesExistentes] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchFretes();
-    fetchUserRole();
   }, []);
 
-  const fetchUserRole = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-      setUserRole(data?.role || null);
-    }
-  };
-
   const fetchFretes = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    // Buscar produtor_id
+    const { data: produtorData } = await supabase
+      .from('produtores')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (produtorData) {
+      setProdutorId(produtorData.id);
+    }
+
     const { data, error } = await supabase
       .from('fretes')
-      .select('*, transportadores(*)')
+      .select('*, transportadores(id, nome, telefone, whatsapp)')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching fretes:', error);
     } else {
       setFretes(data || []);
+      
+      // Buscar avaliações existentes
+      if (produtorData) {
+        const { data: avaliacoes } = await supabase
+          .from('avaliacoes')
+          .select('frete_id')
+          .eq('produtor_id', produtorData.id);
+        
+        if (avaliacoes) {
+          setAvaliacoesExistentes(new Set(avaliacoes.map(a => a.frete_id)));
+        }
+      }
     }
     setLoading(false);
   };
 
-  const handleUpdateStatus = async (freteId: string, action: 'aceitar' | 'recusar') => {
-    const newStatus = action === 'aceitar' ? 'aceito' : 'recusado';
+  const handleEnviarAvaliacao = async (freteId: string) => {
+    const frete = fretes.find(f => f.id === freteId);
+    if (!frete || !produtorId || !frete.transportadores) return;
+
+    setSubmittingAvaliacao(true);
     
     const { error } = await supabase
-      .from('fretes')
-      .update({ status: newStatus })
-      .eq('id', freteId);
+      .from('avaliacoes')
+      .insert({
+        frete_id: freteId,
+        produtor_id: produtorId,
+        transportador_id: frete.transportadores.id,
+        nota,
+        comentario: comentario || null
+      });
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: `Frete ${action === 'aceitar' ? 'aceito' : 'recusado'}!` });
+      toast({ title: 'Avaliação enviada com sucesso!' });
+      setAvaliacaoDialog(null);
+      setNota(5);
+      setComentario('');
       fetchFretes();
     }
+    setSubmittingAvaliacao(false);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'solicitado': return 'bg-yellow-500';
-      case 'aceito': return 'bg-green-500';
-      case 'recusado': return 'bg-red-500';
-      case 'em_andamento': return 'bg-blue-500';
-      case 'concluido': return 'bg-gray-500';
-      default: return 'bg-gray-300';
-    }
+  const formatWhatsAppLink = (phone: string | null) => {
+    if (!phone) return null;
+    const cleanPhone = phone.replace(/\D/g, '');
+    return `https://wa.me/55${cleanPhone}`;
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatCurrency = (value: number | null) => {
+    if (!value) return '-';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
   if (loading) {
-    return <div className="p-4">Carregando...</div>;
+    return <div className="p-4 flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Meus Fretes</h1>
-        <Button variant="outline" onClick={() => navigate('/')}>
-          Voltar
-        </Button>
-      </div>
-
-      {fretes.length === 0 ? (
-        <p className="text-muted-foreground">Nenhum frete encontrado.</p>
-      ) : (
-        <div className="grid gap-4">
-          {fretes.map((frete) => (
-            <Card key={frete.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">
-                    {frete.origem} → {frete.destino}
-                  </CardTitle>
-                  <Badge className={getStatusColor(frete.status)}>
-                    {frete.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {frete.transportadores && (
-                  <p><strong>Transportador:</strong> {frete.transportadores.nome}</p>
-                )}
-                {frete.quantidade_animais && (
-                  <p><strong>Animais:</strong> {frete.quantidade_animais}</p>
-                )}
-                {frete.descricao && (
-                  <p><strong>Descrição:</strong> {frete.descricao}</p>
-                )}
-                <p className="text-sm text-muted-foreground mt-2">
-                  Criado em: {new Date(frete.created_at).toLocaleDateString('pt-BR')}
-                </p>
-
-                {userRole === 'transportador' && frete.status === 'solicitado' && (
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      variant="default"
-                      onClick={() => handleUpdateStatus(frete.id, 'aceitar')}
-                    >
-                      Aceitar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleUpdateStatus(frete.id, 'recusar')}
-                    >
-                      Recusar
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/produtor/painel')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Meus Fretes</h1>
         </div>
-      )}
+
+        {fretes.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Truck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Nenhum frete encontrado.</p>
+              <Button className="mt-4" onClick={() => navigate('/mapa/transportadores')}>
+                Solicitar Novo Frete
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {fretes.map((frete) => (
+              <Card key={frete.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      {frete.origem} → {frete.destino}
+                    </CardTitle>
+                    <StatusBadge status={frete.status} />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    {frete.tipo_animal && (
+                      <div>
+                        <span className="text-muted-foreground">Tipo:</span>
+                        <p className="font-medium capitalize">{frete.tipo_animal}</p>
+                      </div>
+                    )}
+                    {frete.quantidade_animais && (
+                      <div>
+                        <span className="text-muted-foreground">Animais:</span>
+                        <p className="font-medium">{frete.quantidade_animais}</p>
+                      </div>
+                    )}
+                    {frete.valor_frete && (
+                      <div className="flex items-start gap-1">
+                        <DollarSign className="h-3 w-3 text-muted-foreground mt-0.5" />
+                        <div>
+                          <span className="text-muted-foreground">Valor:</span>
+                          <p className="font-medium">{formatCurrency(frete.valor_frete)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {frete.data_prevista && (
+                      <div className="flex items-start gap-1">
+                        <Calendar className="h-3 w-3 text-muted-foreground mt-0.5" />
+                        <div>
+                          <span className="text-muted-foreground">Data:</span>
+                          <p className="font-medium">{formatDate(frete.data_prevista)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {frete.transportadores && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium mb-2">Transportador: {frete.transportadores.nome}</p>
+                      
+                      {(frete.status === 'aceito' || frete.status === 'em_andamento' || frete.status === 'concluido') && (
+                        <div className="flex flex-wrap gap-2">
+                          <a 
+                            href={`tel:${frete.transportadores.telefone}`}
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                          >
+                            <Phone className="h-3 w-3" />
+                            {frete.transportadores.telefone}
+                          </a>
+                          
+                          {frete.transportadores.whatsapp && (
+                            <a 
+                              href={formatWhatsAppLink(frete.transportadores.whatsapp) || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-sm text-green-600 hover:underline"
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                              WhatsApp
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {frete.descricao && (
+                    <p className="text-sm text-muted-foreground">{frete.descricao}</p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    Criado em: {formatDate(frete.created_at)}
+                  </p>
+
+                  {frete.status === 'concluido' && 
+                   frete.produtor_id === produtorId && 
+                   !avaliacoesExistentes.has(frete.id) && (
+                    <Dialog open={avaliacaoDialog === frete.id} onOpenChange={(open) => setAvaliacaoDialog(open ? frete.id : null)}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Star className="h-4 w-4 mr-2" />
+                          Avaliar Transportador
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Avaliar Transportador</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 pt-4">
+                          <div className="text-center">
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Como foi sua experiência com {frete.transportadores?.nome}?
+                            </p>
+                            <StarRating rating={nota} onChange={setNota} size="lg" interactive />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="comentario">Comentário (opcional)</Label>
+                            <Textarea
+                              id="comentario"
+                              placeholder="Deixe um comentário sobre o serviço..."
+                              value={comentario}
+                              onChange={(e) => setComentario(e.target.value)}
+                              rows={3}
+                            />
+                          </div>
+                          <Button 
+                            onClick={() => handleEnviarAvaliacao(frete.id)} 
+                            disabled={submittingAvaliacao}
+                            className="w-full"
+                          >
+                            {submittingAvaliacao ? 'Enviando...' : 'Enviar Avaliação'}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+
+                  {avaliacoesExistentes.has(frete.id) && (
+                    <p className="text-sm text-green-600 flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-current" />
+                      Frete avaliado
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
