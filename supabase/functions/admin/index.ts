@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +16,28 @@ function logSafely(level: 'info' | 'warn' | 'error', context: string, metadata?:
   };
   console[level](JSON.stringify(sanitized));
 }
+
+// Validation schemas
+const TransportadorCreateSchema = z.object({
+  nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres").max(200, "Nome deve ter no máximo 200 caracteres"),
+  telefone: z.string().min(10, "Telefone inválido").max(20, "Telefone inválido"),
+  placa_veiculo: z.string().max(10, "Placa inválida").optional().nullable(),
+  capacidade_animais: z.number().int().positive().max(1000, "Capacidade máxima de 1000").optional().nullable(),
+  regiao_atendimento: z.string().max(500, "Região muito longa").optional().nullable(),
+  tipo_caminhao: z.string().max(50).optional().nullable(),
+  tipo_animal: z.string().max(100).optional().nullable(),
+  whatsapp: z.string().max(20).optional().nullable(),
+  cpf_cnpj: z.string().max(20).optional().nullable(),
+});
+
+const TransportadorUpdateSchema = z.object({
+  telefone: z.string().min(10).max(20).optional(),
+  placa_veiculo: z.string().max(10).optional().nullable(),
+  capacidade_animais: z.number().int().positive().max(1000).optional().nullable(),
+  regiao_atendimento: z.string().max(500).optional().nullable(),
+  tipo_caminhao: z.string().max(50).optional().nullable(),
+  tipo_animal: z.string().max(100).optional().nullable(),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -87,18 +110,24 @@ serve(async (req) => {
     // POST /admin/transportadores - Create transportador
     if (path === 'transportadores' && method === 'POST') {
       const body = await req.json();
-      const { nome, telefone, placa_veiculo, capacidade_animais } = body;
-
-      if (!nome || !telefone) {
-        return new Response(JSON.stringify({ error: 'Nome e telefone são obrigatórios' }), {
+      
+      // Validate input
+      const validation = TransportadorCreateSchema.safeParse(body);
+      if (!validation.success) {
+        return new Response(JSON.stringify({ 
+          error: 'Dados inválidos', 
+          details: validation.error.errors 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
+      const validatedData = validation.data;
+
       const { data, error } = await supabaseClient
         .from('transportadores')
-        .insert({ nome, telefone, placa_veiculo, capacidade_animais, ativo: true })
+        .insert({ ...validatedData, ativo: true })
         .select()
         .single();
 
@@ -119,16 +148,24 @@ serve(async (req) => {
       
       if (transportadorId && transportadorId !== 'transportadores') {
         const body = await req.json();
-        const { telefone, placa_veiculo, capacidade_animais, regiao_atendimento } = body;
+        
+        // Validate input
+        const validation = TransportadorUpdateSchema.safeParse(body);
+        if (!validation.success) {
+          return new Response(JSON.stringify({ 
+            error: 'Dados inválidos', 
+            details: validation.error.errors 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const validatedData = validation.data;
 
         const { data, error } = await supabaseClient
           .from('transportadores')
-          .update({ 
-            telefone, 
-            placa_veiculo, 
-            capacidade_animais, 
-            regiao_atendimento 
-          })
+          .update(validatedData)
           .eq('id', transportadorId)
           .select()
           .single();

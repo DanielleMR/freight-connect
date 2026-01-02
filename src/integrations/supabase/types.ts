@@ -93,13 +93,6 @@ export type Database = {
             referencedRelation: "transportadores"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "avaliacoes_transportador_id_fkey"
-            columns: ["transportador_id"]
-            isOneToOne: false
-            referencedRelation: "transportadores_directory"
-            referencedColumns: ["id"]
-          },
         ]
       }
       fretes: {
@@ -154,13 +147,6 @@ export type Database = {
             columns: ["transportador_id"]
             isOneToOne: false
             referencedRelation: "transportadores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fretes_transportador_id_fkey"
-            columns: ["transportador_id"]
-            isOneToOne: false
-            referencedRelation: "transportadores_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -332,42 +318,7 @@ export type Database = {
       }
     }
     Views: {
-      transportadores_directory: {
-        Row: {
-          ativo: boolean | null
-          capacidade_animais: number | null
-          id: string | null
-          latitude: number | null
-          longitude: number | null
-          nome: string | null
-          regiao_atendimento: string | null
-          tipo_animal: string | null
-          tipo_caminhao: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          capacidade_animais?: number | null
-          id?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          nome?: string | null
-          regiao_atendimento?: string | null
-          tipo_animal?: string | null
-          tipo_caminhao?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          capacidade_animais?: number | null
-          id?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          nome?: string | null
-          regiao_atendimento?: string | null
-          tipo_animal?: string | null
-          tipo_caminhao?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       criar_notificacao: {
@@ -382,6 +333,20 @@ export type Database = {
         Returns: string
       }
       get_produtor_name: { Args: { produtor_uuid: string }; Returns: string }
+      get_transportadores_directory: {
+        Args: never
+        Returns: {
+          ativo: boolean
+          capacidade_animais: number
+          id: string
+          latitude: number
+          longitude: number
+          nome: string
+          regiao_atendimento: string
+          tipo_animal: string
+          tipo_caminhao: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
