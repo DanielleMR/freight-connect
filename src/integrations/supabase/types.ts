@@ -93,6 +93,13 @@ export type Database = {
             referencedRelation: "transportadores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "avaliacoes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fretes: {
@@ -147,6 +154,13 @@ export type Database = {
             columns: ["transportador_id"]
             isOneToOne: false
             referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fretes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -318,7 +332,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      transportadores_directory: {
+        Row: {
+          ativo: boolean | null
+          capacidade_animais: number | null
+          id: string | null
+          latitude: number | null
+          longitude: number | null
+          nome: string | null
+          regiao_atendimento: string | null
+          tipo_animal: string | null
+          tipo_caminhao: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          capacidade_animais?: number | null
+          id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nome?: string | null
+          regiao_atendimento?: string | null
+          tipo_animal?: string | null
+          tipo_caminhao?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          capacidade_animais?: number | null
+          id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nome?: string | null
+          regiao_atendimento?: string | null
+          tipo_animal?: string | null
+          tipo_caminhao?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       criar_notificacao: {
