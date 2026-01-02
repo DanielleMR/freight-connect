@@ -7,18 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Phone, Truck, Filter } from "lucide-react";
+import { ArrowLeft, MapPin, Truck, Filter } from "lucide-react";
 import { toast } from "sonner";
 
-interface Transportador {
+interface TransportadorDirectory {
   id: string;
   nome: string;
-  telefone: string;
+  tipo_animal: string | null;
   regiao_atendimento: string | null;
   capacidade_animais: number | null;
   tipo_caminhao: string | null;
-  tipo_animal: string | null;
   ativo: boolean;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const tiposCaminhao = [
@@ -38,8 +39,8 @@ const tiposAnimal = [
 
 const MapaTransportadores = () => {
   const navigate = useNavigate();
-  const [transportadores, setTransportadores] = useState<Transportador[]>([]);
-  const [filteredTransportadores, setFilteredTransportadores] = useState<Transportador[]>([]);
+  const [transportadores, setTransportadores] = useState<TransportadorDirectory[]>([]);
+  const [filteredTransportadores, setFilteredTransportadores] = useState<TransportadorDirectory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -53,16 +54,16 @@ const MapaTransportadores = () => {
   useEffect(() => {
     const fetchTransportadores = async () => {
       try {
+        // Usa a função segura que retorna apenas dados públicos
         const { data, error } = await supabase
-          .from("transportadores")
-          .select("*")
-          .eq("ativo", true);
+          .rpc('get_transportadores_directory');
 
         if (error) throw error;
         setTransportadores(data || []);
         setFilteredTransportadores(data || []);
       } catch (error: any) {
         toast.error("Erro ao carregar transportadores");
+        console.error("Error:", error);
       } finally {
         setLoading(false);
       }
@@ -194,7 +195,7 @@ const MapaTransportadores = () => {
           )}
         </Card>
 
-        {/* Mapa visual simples (lista estilizada como cards de mapa) */}
+        {/* Lista de transportadores */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
             <p className="col-span-full text-center text-muted-foreground py-8">Carregando...</p>
@@ -221,11 +222,6 @@ const MapaTransportadores = () => {
                   </div>
 
                   <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3 w-3" />
-                      <span>{t.telefone}</span>
-                    </div>
-                    
                     {t.regiao_atendimento && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-3 w-3" />

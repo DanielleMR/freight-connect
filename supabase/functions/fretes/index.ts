@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,20 @@ function logSafely(level: 'info' | 'warn' | 'error', context: string, metadata?:
   };
   console[level](JSON.stringify(sanitized));
 }
+
+// Validation schemas
+const FreteCreateSchema = z.object({
+  transportador_id: z.string().uuid("ID do transportador inválido"),
+  descricao: z.string().max(1000, "Descrição muito longa").optional().nullable(),
+  quantidade_animais: z.number().int().positive().max(1000, "Quantidade máxima de 1000").optional().nullable(),
+  origem: z.string().min(2, "Origem obrigatória").max(500, "Origem muito longa"),
+  destino: z.string().min(2, "Destino obrigatório").max(500, "Destino muito longo"),
+  tipo_animal: z.string().max(100, "Tipo de animal inválido").optional().nullable(),
+  valor_frete: z.number().positive().max(1000000, "Valor máximo excedido").optional().nullable(),
+  data_prevista: z.string().optional().nullable(),
+});
+
+const FreteActionSchema = z.enum(['aceitar', 'recusar', 'em_andamento', 'concluir']);
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,6 +64,15 @@ Deno.serve(async (req) => {
       logSafely('info', 'FRETES_GET', { hasId: !!id })
       
       if (id) {
+        // Validate UUID format
+        const uuidValidation = z.string().uuid().safeParse(id);
+        if (!uuidValidation.success) {
+          return new Response(JSON.stringify({ error: 'ID inválido' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+
         const { data, error } = await supabase
           .from('fretes')
           .select('*, transportadores(*)')
@@ -91,15 +115,32 @@ Deno.serve(async (req) => {
       logSafely('info', 'FRETES_POST')
       const body = await req.json()
       
+      // Validate input
+      const validation = FreteCreateSchema.safeParse(body);
+      if (!validation.success) {
+        return new Response(JSON.stringify({ 
+          error: 'Dados inválidos', 
+          details: validation.error.errors 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const validatedData = validation.data;
+      
       const { data, error } = await supabase
         .from('fretes')
         .insert({
           produtor_id: user.id,
-          transportador_id: body.transportador_id,
-          descricao: body.descricao,
-          quantidade_animais: body.quantidade_animais,
-          origem: body.origem,
-          destino: body.destino,
+          transportador_id: validatedData.transportador_id,
+          descricao: validatedData.descricao,
+          quantidade_animais: validatedData.quantidade_animais,
+          origem: validatedData.origem,
+          destino: validatedData.destino,
+          tipo_animal: validatedData.tipo_animal,
+          valor_frete: validatedData.valor_frete,
+          data_prevista: validatedData.data_prevista,
           status: 'solicitado',
         })
         .select('*, transportadores(*)')
@@ -129,17 +170,32 @@ Deno.serve(async (req) => {
         })
       }
 
-      let newStatus: string
-      if (action === 'aceitar') {
-        newStatus = 'aceito'
-      } else if (action === 'recusar') {
-        newStatus = 'recusado'
-      } else {
-        return new Response(JSON.stringify({ error: 'Invalid action. Use aceitar or recusar' }), {
+      // Validate UUID format
+      const uuidValidation = z.string().uuid().safeParse(id);
+      if (!uuidValidation.success) {
+        return new Response(JSON.stringify({ error: 'ID inválido' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+
+      // Validate action
+      const actionValidation = FreteActionSchema.safeParse(action);
+      if (!actionValidation.success) {
+        return new Response(JSON.stringify({ error: 'Ação inválida. Use aceitar, recusar, em_andamento ou concluir' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const statusMap: Record<string, string> = {
+        'aceitar': 'aceito',
+        'recusar': 'recusado',
+        'em_andamento': 'em_andamento',
+        'concluir': 'concluido'
+      };
+
+      const newStatus = statusMap[actionValidation.data];
 
       const { data, error } = await supabase
         .from('fretes')
