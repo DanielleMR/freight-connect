@@ -5,6 +5,7 @@ import HeroSection from "@/components/sections/HeroSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import FeaturesSection from "@/components/sections/FeaturesSection";
 import CTASection from "@/components/sections/CTASection";
+import QuickAccessSection from "@/components/sections/QuickAccessSection";
 
 /**
  * Index - Página principal (Landing Page)
@@ -26,6 +27,7 @@ const Index = () => {
         <Header />
         <main className="flex-1">
           <HeroSection />
+          <QuickAccessSection />
           <HowItWorksSection />
           <FeaturesSection />
           <CTASection />
