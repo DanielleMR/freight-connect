@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Truck, Filter } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Filter, List, Map } from "lucide-react";
 import { toast } from "sonner";
+import TransportadorMap from "@/components/map/TransportadorMap";
+import TransportadorCard from "@/components/transportador/TransportadorCard";
 
 interface TransportadorDirectory {
   id: string;
@@ -42,22 +44,21 @@ const MapaTransportadores = () => {
   const [transportadores, setTransportadores] = useState<TransportadorDirectory[]>([]);
   const [filteredTransportadores, setFilteredTransportadores] = useState<TransportadorDirectory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
 
   const [filters, setFilters] = useState({
     regiao: "",
     tipoAnimal: "",
     capacidadeMinima: "",
-    tipoCaminhao: ""
+    tipoCaminhao: "",
+    apenasDisponiveis: true
   });
 
   useEffect(() => {
     const fetchTransportadores = async () => {
       try {
-        // Usa a função segura que retorna apenas dados públicos
-        const { data, error } = await supabase
-          .rpc('get_transportadores_directory');
-
+        const { data, error } = await supabase.rpc('get_transportadores_directory');
         if (error) throw error;
         setTransportadores(data || []);
         setFilteredTransportadores(data || []);
@@ -74,6 +75,10 @@ const MapaTransportadores = () => {
 
   useEffect(() => {
     let result = [...transportadores];
+
+    if (filters.apenasDisponiveis) {
+      result = result.filter(t => t.ativo);
+    }
 
     if (filters.regiao) {
       result = result.filter(t => 
@@ -97,7 +102,7 @@ const MapaTransportadores = () => {
     setFilteredTransportadores(result);
   }, [filters, transportadores]);
 
-  const handleFilterChange = (field: string, value: string) => {
+  const handleFilterChange = (field: string, value: string | boolean) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
@@ -106,18 +111,45 @@ const MapaTransportadores = () => {
       regiao: "",
       tipoAnimal: "",
       capacidadeMinima: "",
-      tipoCaminhao: ""
+      tipoCaminhao: "",
+      apenasDisponiveis: true
     });
+  };
+
+  const handleSelectTransportador = (id: string) => {
+    navigate(`/solicitar-frete/${id}`);
   };
 
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground p-4 shadow">
-        <div className="container mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-xl font-bold">Mapa de Transportadores</h1>
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-xl font-bold">Mapa de Transportadores</h1>
+          </div>
+          <div className="flex items-center gap-2 bg-primary-foreground/10 rounded-lg p-1">
+            <Button
+              variant={viewMode === "map" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("map")}
+              className="gap-2"
+            >
+              <Map className="h-4 w-4" />
+              Mapa
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="gap-2"
+            >
+              <List className="h-4 w-4" />
+              Lista
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -137,7 +169,7 @@ const MapaTransportadores = () => {
           </CardHeader>
           {showFilters && (
             <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-4 gap-4">
+              <div className="grid md:grid-cols-5 gap-4">
                 <div className="space-y-2">
                   <Label>Região</Label>
                   <Input
@@ -186,84 +218,60 @@ const MapaTransportadores = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Disponibilidade</Label>
+                  <div className="flex items-center gap-2 h-10">
+                    <Switch
+                      checked={filters.apenasDisponiveis}
+                      onCheckedChange={(v) => handleFilterChange("apenasDisponiveis", v)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      Apenas disponíveis
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Limpar Filtros
-              </Button>
+              <div className="flex items-center justify-between">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Limpar Filtros
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {filteredTransportadores.length} transportador(es) encontrado(s)
+                </span>
+              </div>
             </CardContent>
           )}
         </Card>
 
-        {/* Lista de transportadores */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {loading ? (
-            <p className="col-span-full text-center text-muted-foreground py-8">Carregando...</p>
-          ) : filteredTransportadores.length === 0 ? (
-            <p className="col-span-full text-center text-muted-foreground py-8">
-              Nenhum transportador encontrado com os filtros selecionados.
-            </p>
-          ) : (
-            filteredTransportadores.map((t) => (
-              <Card key={t.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Truck className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{t.nome}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {t.ativo ? "Disponível" : "Indisponível"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    {t.regiao_atendimento && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3" />
-                        <span>{t.regiao_atendimento}</span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {t.capacidade_animais && (
-                        <Badge variant="outline" className="text-xs">
-                          {t.capacidade_animais} animais
-                        </Badge>
-                      )}
-                      {t.tipo_caminhao && (
-                        <Badge variant="outline" className="text-xs">
-                          {tiposCaminhao.find(tc => tc.value === t.tipo_caminhao)?.label || t.tipo_caminhao}
-                        </Badge>
-                      )}
-                      {t.tipo_animal && (
-                        <Badge variant="outline" className="text-xs">
-                          {tiposAnimal.find(ta => ta.value === t.tipo_animal)?.label || t.tipo_animal}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <Button 
-                    className="w-full mt-4" 
-                    size="sm"
-                    onClick={() => navigate(`/solicitar-frete/${t.id}`)}
-                  >
-                    Solicitar Frete
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          {filteredTransportadores.length} transportador(es) encontrado(s)
-        </div>
+        {/* Conteúdo principal */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : viewMode === "map" ? (
+          <TransportadorMap
+            transportadores={filteredTransportadores}
+            onSelectTransportador={handleSelectTransportador}
+          />
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTransportadores.length === 0 ? (
+              <p className="col-span-full text-center text-muted-foreground py-8">
+                Nenhum transportador encontrado com os filtros selecionados.
+              </p>
+            ) : (
+              filteredTransportadores.map((t) => (
+                <TransportadorCard
+                  key={t.id}
+                  transportador={t}
+                  onSelect={() => handleSelectTransportador(t.id)}
+                />
+              ))
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
