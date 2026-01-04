@@ -27,7 +27,7 @@ const QuickAccessSection = () => {
       title: "Administrador",
       description: "Acesso restrito ao painel administrativo",
       icon: ShieldCheck,
-      path: "/admin",
+      path: "/admin/login",
       variant: "outline" as const,
     },
   ];
@@ -76,7 +76,7 @@ const QuickAccessSection = () => {
             size="lg"
             variant="outline"
             className="gap-2"
-            onClick={() => navigate("/mapa")}
+            onClick={() => navigate("/mapa/transportadores")}
           >
             <MapPin className="w-5 h-5" />
             Ver Mapa de Transportadores
