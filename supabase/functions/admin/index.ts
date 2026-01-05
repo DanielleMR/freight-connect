@@ -91,6 +91,82 @@ serve(async (req) => {
 
     logSafely('info', 'ADMIN_REQUEST', { path: path || 'unknown', method });
 
+    // Handle body-based actions for PATCH and PUT
+    if (method === 'PATCH' || method === 'PUT') {
+      const body = await req.json();
+      
+      // Toggle transportador status
+      if (body.action === 'toggle' && body.transportadorId) {
+        const transportadorId = body.transportadorId;
+        
+        // Get current status
+        const { data: current, error: fetchError } = await supabaseClient
+          .from('transportadores')
+          .select('ativo')
+          .eq('id', transportadorId)
+          .single();
+
+        if (fetchError) {
+          logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'transportadores' });
+          throw fetchError;
+        }
+
+        // Toggle status
+        const { data, error } = await supabaseClient
+          .from('transportadores')
+          .update({ ativo: !current.ativo })
+          .eq('id', transportadorId)
+          .select()
+          .single();
+
+        if (error) {
+          logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'transportadores' });
+          throw error;
+        }
+        
+        logSafely('info', 'TOGGLE_SUCCESS', { newStatus: !current.ativo });
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Update transportador
+      if (body.action === 'update' && body.transportadorId && body.data) {
+        const transportadorId = body.transportadorId;
+        
+        // Validate input
+        const validation = TransportadorUpdateSchema.safeParse(body.data);
+        if (!validation.success) {
+          return new Response(JSON.stringify({ 
+            error: 'Dados inválidos', 
+            details: validation.error.errors 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const validatedData = validation.data;
+
+        const { data, error } = await supabaseClient
+          .from('transportadores')
+          .update(validatedData)
+          .eq('id', transportadorId)
+          .select()
+          .single();
+
+        if (error) {
+          logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'transportadores' });
+          throw error;
+        }
+        
+        logSafely('info', 'UPDATE_SUCCESS');
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // GET /admin/transportadores - List all transportadores
     if (path === 'transportadores' && method === 'GET') {
       const { data, error } = await supabaseClient
@@ -141,106 +217,19 @@ serve(async (req) => {
       });
     }
 
-    // PUT /admin/transportadores/:id - Update transportador
-    if (method === 'PUT') {
-      const pathParts = url.pathname.split('/');
-      const transportadorId = pathParts[pathParts.length - 1];
-      
-      if (transportadorId && transportadorId !== 'transportadores') {
-        const body = await req.json();
-        
-        // Validate input
-        const validation = TransportadorUpdateSchema.safeParse(body);
-        if (!validation.success) {
-          return new Response(JSON.stringify({ 
-            error: 'Dados inválidos', 
-            details: validation.error.errors 
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        const validatedData = validation.data;
-
-        const { data, error } = await supabaseClient
-          .from('transportadores')
-          .update(validatedData)
-          .eq('id', transportadorId)
-          .select()
-          .single();
-
-        if (error) {
-          logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'transportadores' });
-          throw error;
-        }
-        return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
-
-    // PATCH /admin/transportadores/:id/toggle - Activate/Deactivate transportador
-    if (path === 'toggle' && method === 'PATCH') {
-      const transportadorId = url.pathname.split('/').slice(-2, -1)[0];
-      
-      // Get current status
-      const { data: current, error: fetchError } = await supabaseClient
-        .from('transportadores')
-        .select('ativo')
-        .eq('id', transportadorId)
-        .single();
-
-      if (fetchError) {
-        logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'transportadores' });
-        throw fetchError;
-      }
-
-      // Toggle status
-      const { data, error } = await supabaseClient
-        .from('transportadores')
-        .update({ ativo: !current.ativo })
-        .eq('id', transportadorId)
-        .select()
-        .single();
-
-      if (error) {
-        logSafely('error', 'DB_ERROR', { operation: 'UPDATE', table: 'transportadores' });
-        throw error;
-      }
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // GET /admin/produtores - List all produtores
     if (path === 'produtores' && method === 'GET') {
       const { data, error } = await supabaseClient
-        .from('user_roles')
-        .select(`
-          user_id,
-          role,
-          profiles:user_id (
-            id,
-            email,
-            created_at
-          )
-        `)
-        .eq('role', 'produtor');
+        .from('produtores')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
-        logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'user_roles' });
+        logSafely('error', 'DB_ERROR', { operation: 'SELECT', table: 'produtores' });
         throw error;
       }
-      
-      const produtores = data?.map(item => ({
-        id: item.user_id,
-        email: (item.profiles as any)?.email || 'N/A',
-        created_at: (item.profiles as any)?.created_at,
-        role: item.role
-      })) || [];
 
-      return new Response(JSON.stringify(produtores), {
+      return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

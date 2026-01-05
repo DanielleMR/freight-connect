@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Calendar, DollarSign, Truck } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Truck, AlertTriangle, UserPlus } from 'lucide-react';
 
 interface Transportador {
   id: string;
@@ -34,6 +35,7 @@ export default function SolicitarFrete() {
   const [transportador, setTransportador] = useState<Transportador | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showNoCadastroModal, setShowNoCadastroModal] = useState(false);
   
   const [origem, setOrigem] = useState('');
   const [destino, setDestino] = useState('');
@@ -86,7 +88,8 @@ export default function SolicitarFrete() {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      toast({ title: 'Erro', description: 'Você precisa estar logado', variant: 'destructive' });
+      toast({ title: 'Atenção', description: 'Você precisa estar logado para solicitar um frete', variant: 'destructive' });
+      navigate('/auth');
       setSubmitting(false);
       return;
     }
@@ -98,7 +101,8 @@ export default function SolicitarFrete() {
       .maybeSingle();
 
     if (produtorError || !produtorData) {
-      toast({ title: 'Erro', description: 'Você precisa ter um cadastro de produtor', variant: 'destructive' });
+      // Show modal or redirect to complete profile
+      setShowNoCadastroModal(true);
       setSubmitting(false);
       return;
     }
@@ -259,6 +263,35 @@ export default function SolicitarFrete() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Modal para usuários sem cadastro de produtor */}
+        <Dialog open={showNoCadastroModal} onOpenChange={setShowNoCadastroModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+                <AlertTriangle className="h-6 w-6 text-amber-600" />
+              </div>
+              <DialogTitle className="text-center">Cadastro de Produtor Necessário</DialogTitle>
+              <DialogDescription className="text-center">
+                Para solicitar fretes, você precisa ter um cadastro de produtor completo em sua conta.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <p className="text-sm text-muted-foreground text-center">
+                Complete seu cadastro para poder solicitar transporte de animais aos transportadores disponíveis.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button onClick={() => navigate('/produtor/cadastro')} className="w-full gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Completar Cadastro de Produtor
+                </Button>
+                <Button variant="outline" onClick={() => setShowNoCadastroModal(false)} className="w-full">
+                  Voltar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
