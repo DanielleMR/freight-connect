@@ -39,6 +39,9 @@ const tiposAnimal: Record<string, string> = {
   caprino: "Caprino",
 };
 
+// Token público de demonstração do Mapbox (pode ser substituído)
+const DEMO_MAPBOX_TOKEN = "pk.eyJ1IjoibG92YWJsZS1kZW1vIiwiYSI6ImNsb3ZhYmxlLWRlbW8ifQ.demo-token-placeholder";
+
 const TransportadorMap = ({ transportadores, onSelectTransportador }: TransportadorMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -47,15 +50,25 @@ const TransportadorMap = ({ transportadores, onSelectTransportador }: Transporta
     return localStorage.getItem("mapbox_token") || "";
   });
   const [tokenInput, setTokenInput] = useState(mapboxToken);
-  const [mapInitialized, setMapInitialized] = useState(!!mapboxToken);
+  const [mapInitialized, setMapInitialized] = useState(false);
+  const [mapError, setMapError] = useState(false);
   const [selectedTransportador, setSelectedTransportador] = useState<Transportador | null>(null);
 
   const saveToken = () => {
     if (tokenInput.trim()) {
       localStorage.setItem("mapbox_token", tokenInput.trim());
       setMapboxToken(tokenInput.trim());
-      setMapInitialized(true);
+      setMapError(false);
     }
+  };
+
+  const useDemoToken = () => {
+    // Para ambiente de desenvolvimento/demo, usar token placeholder
+    // Em produção, o usuário deve configurar seu próprio token
+    const demoToken = DEMO_MAPBOX_TOKEN;
+    localStorage.setItem("mapbox_token", demoToken);
+    setMapboxToken(demoToken);
+    setMapError(false);
   };
 
   // Inicializar mapa
@@ -72,13 +85,27 @@ const TransportadorMap = ({ transportadores, onSelectTransportador }: Transporta
         zoom: 4,
       });
 
+      map.current.on('load', () => {
+        setMapInitialized(true);
+        setMapError(false);
+      });
+
+      map.current.on('error', (e) => {
+        console.error("Mapbox error:", e);
+        const errorMessage = e.error?.message || '';
+        if (errorMessage.includes('access token') || errorMessage.includes('Unauthorized')) {
+          setMapError(true);
+          setMapInitialized(false);
+        }
+      });
+
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
       map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
 
     } catch (error) {
       console.error("Error initializing Mapbox:", error);
+      setMapError(true);
       setMapInitialized(false);
-      localStorage.removeItem("mapbox_token");
     }
 
     return () => {
@@ -148,43 +175,163 @@ const TransportadorMap = ({ transportadores, onSelectTransportador }: Transporta
     });
   }, [transportadores, mapInitialized]);
 
-  if (!mapInitialized) {
+  // Mostrar visualização de fallback se não tiver token ou erro
+  if (!mapboxToken || mapError) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-            Configurar Mapbox
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Para visualizar o mapa interativo, insira seu token público do Mapbox.
-            Você pode obter um em{" "}
-            <a
-              href="https://mapbox.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline"
-            >
-              mapbox.com
-            </a>
-          </p>
-          <div className="space-y-2">
-            <Label htmlFor="mapbox-token">Token Público do Mapbox</Label>
-            <Input
-              id="mapbox-token"
-              type="text"
-              placeholder="pk.eyJ1..."
-              value={tokenInput}
-              onChange={(e) => setTokenInput(e.target.value)}
-            />
+      <div className="relative w-full h-[500px] rounded-lg overflow-hidden border border-border bg-muted">
+        {/* Mapa estático de fallback */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/20 dark:to-green-900/20">
+          {/* Grid de fundo simulando mapa */}
+          <div className="absolute inset-0 opacity-20" style={{
+            backgroundImage: `
+              linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+              linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px'
+          }} />
+          
+          {/* Marcadores dos transportadores */}
+          <div className="absolute inset-0 p-8">
+            <div className="relative w-full h-full">
+              {transportadores.filter(t => t.latitude && t.longitude).map((t, index) => {
+                // Posicionar marcadores baseado em lat/long aproximado para o Brasil
+                const left = ((t.longitude! + 75) / 40) * 100;
+                const top = ((-t.latitude! + 5) / 40) * 100;
+                return (
+                  <button
+                    key={t.id}
+                    className={`absolute w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-125 z-10 ${
+                      t.ativo 
+                        ? "bg-primary text-primary-foreground shadow-lg" 
+                        : "bg-muted-foreground/50 text-muted"
+                    }`}
+                    style={{ 
+                      left: `${Math.min(Math.max(left, 5), 90)}%`, 
+                      top: `${Math.min(Math.max(top, 5), 85)}%` 
+                    }}
+                    onClick={() => setSelectedTransportador(t)}
+                    title={t.nome}
+                  >
+                    <Truck className="h-4 w-4" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <Button onClick={saveToken} disabled={!tokenInput.trim()}>
-            Salvar e Carregar Mapa
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Card de configuração sobreposto */}
+        <Card className="absolute top-4 left-4 max-w-sm shadow-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              {mapError ? "Token inválido" : "Mapa em modo preview"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {mapError 
+                ? "O token fornecido é inválido. Configure um token válido do Mapbox."
+                : "Configure seu token do Mapbox para visualização completa."}
+            </p>
+            <div className="space-y-2">
+              <Input
+                type="text"
+                placeholder="pk.eyJ1..."
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                className="text-xs h-8"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={saveToken} disabled={!tokenInput.trim()} size="sm" className="text-xs">
+                Salvar Token
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card do transportador selecionado */}
+        {selectedTransportador && (
+          <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-20 animate-scale-in">
+            <Card className="shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      selectedTransportador.ativo 
+                        ? "bg-primary/10" 
+                        : "bg-muted"
+                    }`}>
+                      <Truck className={`h-6 w-6 ${
+                        selectedTransportador.ativo 
+                          ? "text-primary" 
+                          : "text-muted-foreground"
+                      }`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">
+                        {selectedTransportador.nome}
+                      </h3>
+                      <span className={`text-xs font-medium ${
+                        selectedTransportador.ativo 
+                          ? "text-green-600" 
+                          : "text-muted-foreground"
+                      }`}>
+                        {selectedTransportador.ativo ? "Disponível" : "Indisponível"}
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setSelectedTransportador(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                  {selectedTransportador.regiao_atendimento && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{selectedTransportador.regiao_atendimento}</span>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTransportador.capacidade_animais && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
+                        {selectedTransportador.capacidade_animais} animais
+                      </span>
+                    )}
+                    {selectedTransportador.tipo_caminhao && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
+                        {tiposCaminhao[selectedTransportador.tipo_caminhao] || selectedTransportador.tipo_caminhao}
+                      </span>
+                    )}
+                    {selectedTransportador.tipo_animal && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
+                        {tiposAnimal[selectedTransportador.tipo_animal] || selectedTransportador.tipo_animal}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {onSelectTransportador && selectedTransportador.ativo && (
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    onClick={() => onSelectTransportador(selectedTransportador.id)}
+                  >
+                    Solicitar Frete
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     );
   }
 
