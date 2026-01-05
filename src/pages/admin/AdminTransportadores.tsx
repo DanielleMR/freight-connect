@@ -60,8 +60,9 @@ const AdminTransportadores = () => {
 
   const handleToggle = async (id: string) => {
     try {
-      const response = await supabase.functions.invoke(`admin/${id}/toggle`, {
+      const response = await supabase.functions.invoke(`admin`, {
         method: 'PATCH',
+        body: { action: 'toggle', transportadorId: id },
       });
 
       if (response.error) throw response.error;
@@ -88,13 +89,17 @@ const AdminTransportadores = () => {
     setSubmitting(true);
 
     try {
-      const response = await supabase.functions.invoke(`admin/transportadores/${editingTransportador.id}`, {
+      const response = await supabase.functions.invoke(`admin`, {
         method: 'PUT',
         body: {
-          telefone: editTelefone,
-          placa_veiculo: editPlacaVeiculo || null,
-          capacidade_animais: editCapacidadeAnimais ? parseInt(editCapacidadeAnimais) : null,
-          regiao_atendimento: editRegiaoAtendimento || null,
+          action: 'update',
+          transportadorId: editingTransportador.id,
+          data: {
+            telefone: editTelefone,
+            placa_veiculo: editPlacaVeiculo || null,
+            capacidade_animais: editCapacidadeAnimais ? parseInt(editCapacidadeAnimais) : null,
+            regiao_atendimento: editRegiaoAtendimento || null,
+          }
         },
       });
 

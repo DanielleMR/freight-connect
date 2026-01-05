@@ -40,6 +40,12 @@ interface Frete {
   descricao: string | null;
   created_at: string;
   produtor_id: string;
+  produtor?: {
+    nome: string;
+    telefone: string;
+    cidade: string | null;
+    estado: string | null;
+  } | null;
 }
 
 interface Avaliacao {
@@ -124,7 +130,24 @@ const TransportadorPainel = () => {
       .eq("transportador_id", transportadorId)
       .order("created_at", { ascending: false });
 
-    if (data) setFretes(data);
+    if (data) {
+      // Fetch produtor data for each frete
+      const fretesComProdutor = await Promise.all(
+        data.map(async (frete) => {
+          const { data: produtorData } = await supabase
+            .from("produtores")
+            .select("nome, telefone, cidade, estado")
+            .eq("id", frete.produtor_id)
+            .maybeSingle();
+          
+          return {
+            ...frete,
+            produtor: produtorData
+          };
+        })
+      );
+      setFretes(fretesComProdutor as Frete[]);
+    }
   };
 
   const fetchAvaliacoes = async (transportadorId: string) => {
@@ -373,24 +396,38 @@ const TransportadorPainel = () => {
                           <span>📅 {formatDate(frete.data_prevista)}</span>
                         </div>
 
-                        {/* Botão de contato - só aparece após aceite */}
-                        {frete.status === 'aceito' && (
-                          <div className="mt-3">
-                            {!contatoVisivel[frete.id] ? (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setContatoVisivel(prev => ({ ...prev, [frete.id]: true }))}
-                              >
-                                <Phone className="h-4 w-4 mr-2" />
-                                Ver contato do produtor
-                              </Button>
-                            ) : (
-                              <div className="flex gap-2 items-center text-sm bg-muted/50 p-2 rounded">
-                                <Phone className="h-4 w-4" />
-                                <span>Contato disponível após aceite</span>
+                        {/* Contato do produtor - dados reais */}
+                        {(frete.status === 'aceito' || frete.status === 'em_andamento') && frete.produtor && (
+                          <div className="mt-3 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
+                              Contato do Produtor
+                            </p>
+                            <div className="space-y-1 text-sm">
+                              <p className="font-medium">{frete.produtor.nome}</p>
+                              {frete.produtor.cidade && frete.produtor.estado && (
+                                <p className="text-muted-foreground">
+                                  {frete.produtor.cidade}, {frete.produtor.estado}
+                                </p>
+                              )}
+                              <div className="flex gap-3 mt-2">
+                                <a 
+                                  href={`tel:${frete.produtor.telefone}`}
+                                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                                >
+                                  <Phone className="h-4 w-4" />
+                                  {frete.produtor.telefone}
+                                </a>
+                                <a 
+                                  href={`https://wa.me/55${frete.produtor.telefone.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-green-600 hover:underline"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                  WhatsApp
+                                </a>
                               </div>
-                            )}
+                            </div>
                           </div>
                         )}
                       </div>

@@ -40,7 +40,9 @@ const TransportadorCadastro = () => {
     tipoAnimal: "",
     capacidadeAnimais: "",
     tipoCaminhao: "",
-    placaVeiculo: ""
+    placaVeiculo: "",
+    latitude: "",
+    longitude: ""
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -130,6 +132,8 @@ const TransportadorCadastro = () => {
           capacidade_animais: parseInt(formData.capacidadeAnimais) || null,
           tipo_caminhao: formData.tipoCaminhao,
           placa_veiculo: formData.placaVeiculo || null,
+          latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+          longitude: formData.longitude ? parseFloat(formData.longitude) : null,
           ativo: true
         });
 
@@ -321,6 +325,38 @@ const TransportadorCadastro = () => {
               </div>
             </div>
 
+            {/* Localização */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Localização (Opcional)</h3>
+              <p className="text-xs text-muted-foreground">
+                Informe suas coordenadas para aparecer no mapa de transportadores.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="latitude">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    value={formData.latitude}
+                    onChange={(e) => handleChange("latitude", e.target.value)}
+                    placeholder="Ex: -19.9167"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="longitude">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    value={formData.longitude}
+                    onChange={(e) => handleChange("longitude", e.target.value)}
+                    placeholder="Ex: -43.9345"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Botões */}
             <div className="flex gap-3 pt-4">
               <Button
@@ -334,6 +370,16 @@ const TransportadorCadastro = () => {
               <Button type="submit" className="flex-1" disabled={loading}>
                 {loading ? "Cadastrando..." : "Cadastrar"}
               </Button>
+            </div>
+
+            {/* Link para login */}
+            <div className="text-center pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Já tem uma conta?{" "}
+                <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/auth")}>
+                  Fazer login
+                </Button>
+              </p>
             </div>
           </form>
         </CardContent>

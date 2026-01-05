@@ -203,6 +203,16 @@ const ProdutorCadastro = () => {
                 {loading ? "Cadastrando..." : "Cadastrar"}
               </Button>
             </div>
+
+            {/* Link para login */}
+            <div className="text-center pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Já tem uma conta?{" "}
+                <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/auth")}>
+                  Fazer login
+                </Button>
+              </p>
+            </div>
           </form>
         </CardContent>
       </Card>
