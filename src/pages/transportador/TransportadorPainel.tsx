@@ -7,12 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Truck, Package, LogOut, User, Star, History, CheckCircle, XCircle, Play, Phone, MessageCircle } from "lucide-react";
+import { Truck, Package, LogOut, User, Star, History, CheckCircle, XCircle, Play, Phone, MessageCircle, DollarSign, Ruler, ArrowUpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StarRating, RatingSummary } from "@/components/ui/star-rating";
 import { mascaraTelefone, mascaraCPFouCNPJ } from "@/lib/validations";
+import { FreteTimeline } from "@/components/frete/FreteTimeline";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Transportador {
   id: string;
@@ -35,6 +37,10 @@ interface Frete {
   quantidade_animais: number | null;
   tipo_animal: string | null;
   valor_frete: number | null;
+  tipo_cobranca: string | null;
+  distancia_estimada: number | null;
+  observacoes_valor: string | null;
+  valor_contraproposta: number | null;
   data_prevista: string | null;
   status: string;
   descricao: string | null;
@@ -80,6 +86,8 @@ const TransportadorPainel = () => {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Transportador>>({});
   const [contatoVisivel, setContatoVisivel] = useState<Record<string, boolean>>({});
+  const [contrapropostaDialog, setContrapropostaDialog] = useState<string | null>(null);
+  const [valorContraproposta, setValorContraproposta] = useState('');
 
   useEffect(() => {
     checkAuth();
@@ -176,6 +184,41 @@ const TransportadorPainel = () => {
     } else {
       toast.success(`Frete ${newStatus === 'aceito' ? 'aceito' : newStatus === 'recusado' ? 'recusado' : 'atualizado'}!`);
       if (transportador) fetchFretes(transportador.id);
+    }
+  };
+
+  const handleContraproposta = async (freteId: string) => {
+    if (!valorContraproposta) {
+      toast.error("Informe o valor da contraproposta");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("fretes")
+      .update({ 
+        valor_contraproposta: parseFloat(valorContraproposta),
+        status: "aceito" 
+      })
+      .eq("id", freteId);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Contraproposta enviada e frete aceito!");
+      setContrapropostaDialog(null);
+      setValorContraproposta('');
+      if (transportador) fetchFretes(transportador.id);
+    }
+  };
+
+  const getTipoCobrancaLabel = (tipo: string | null) => {
+    switch (tipo) {
+      case "valor_fechado":
+        return "Valor Fechado";
+      case "valor_km":
+        return "Valor por KM";
+      default:
+        return tipo || "Valor Fechado";
     }
   };
 
@@ -324,39 +367,85 @@ const TransportadorPainel = () => {
               fretesPendentes.map((frete) => (
                 <Card key={frete.id} className="border-l-4 border-l-amber-500">
                   <CardContent className="p-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <StatusBadge status={frete.status} />
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={frete.status} />
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(frete.created_at)}
+                        </span>
+                      </div>
+                      
+                      <h3 className="font-semibold text-lg">
+                        {frete.origem} → {frete.destino}
+                      </h3>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          <span>{frete.quantidade_animais || "-"} animais</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🐄</span>
+                          <span className="capitalize">{frete.tipo_animal || "-"}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Ruler className="h-4 w-4 text-muted-foreground" />
+                          <span>{frete.distancia_estimada ? `${frete.distancia_estimada} km` : "-"}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">📅</span>
+                          <span>{formatDate(frete.data_prevista)}</span>
+                        </div>
+                      </div>
+
+                      {/* Destaque do Valor */}
+                      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-5 w-5 text-green-600" />
+                            <span className="text-xl font-bold text-green-600">
+                              {formatCurrency(frete.valor_frete)}
+                            </span>
+                          </div>
                           <span className="text-sm text-muted-foreground">
-                            {formatDate(frete.created_at)}
+                            {getTipoCobrancaLabel(frete.tipo_cobranca)}
                           </span>
                         </div>
-                        <h3 className="font-semibold text-lg mb-1">
-                          {frete.origem} → {frete.destino}
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-muted-foreground">
-                          <span>📦 {frete.quantidade_animais || "-"} animais</span>
-                          <span>🐄 {frete.tipo_animal || "-"}</span>
-                          <span>💰 {formatCurrency(frete.valor_frete)}</span>
-                          <span>📅 {formatDate(frete.data_prevista)}</span>
-                        </div>
-                        {frete.descricao && (
-                          <p className="text-sm mt-2 text-muted-foreground">{frete.descricao}</p>
+                        {frete.observacoes_valor && (
+                          <p className="text-sm text-muted-foreground">
+                            {frete.observacoes_valor}
+                          </p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+
+                      {frete.descricao && (
+                        <p className="text-sm text-muted-foreground border-t pt-2">{frete.descricao}</p>
+                      )}
+
+                      {/* Botões de Ação */}
+                      <div className="flex flex-wrap gap-2 pt-2 border-t">
                         <Button 
                           onClick={() => handleUpdateStatus(frete.id, "aceito")}
-                          className="gap-2"
+                          className="gap-2 flex-1 md:flex-none"
                         >
                           <CheckCircle className="h-4 w-4" />
-                          Aceitar
+                          Aceitar pelo Valor
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            setContrapropostaDialog(frete.id);
+                            setValorContraproposta('');
+                          }}
+                          className="gap-2 flex-1 md:flex-none"
+                        >
+                          <ArrowUpCircle className="h-4 w-4" />
+                          Aceito por Valor Superior
                         </Button>
                         <Button 
                           variant="destructive"
                           onClick={() => handleUpdateStatus(frete.id, "recusado")}
-                          className="gap-2"
+                          className="gap-2 flex-1 md:flex-none"
                         >
                           <XCircle className="h-4 w-4" />
                           Recusar
@@ -633,6 +722,57 @@ const TransportadorPainel = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialog de Contraproposta */}
+        <Dialog open={contrapropostaDialog !== null} onOpenChange={() => setContrapropostaDialog(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ArrowUpCircle className="h-5 w-5 text-primary" />
+                Aceitar com Valor Superior
+              </DialogTitle>
+              <DialogDescription>
+                O frete será aceito e sua contraproposta será registrada.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              {contrapropostaDialog && (
+                <div className="text-sm text-muted-foreground">
+                  <p>Valor proposto pelo produtor:</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {formatCurrency(fretesPendentes.find(f => f.id === contrapropostaDialog)?.valor_frete || 0)}
+                  </p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="valorContraproposta" className="flex items-center gap-1">
+                  <DollarSign className="h-4 w-4" />
+                  Seu Valor (R$)
+                </Label>
+                <Input
+                  id="valorContraproposta"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Ex: 2000.00"
+                  value={valorContraproposta}
+                  onChange={(e) => setValorContraproposta(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setContrapropostaDialog(null)} className="flex-1">
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={() => contrapropostaDialog && handleContraproposta(contrapropostaDialog)}
+                  className="flex-1"
+                >
+                  Confirmar e Aceitar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
