@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Calendar, DollarSign, Truck, AlertTriangle, UserPlus } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Truck, AlertTriangle, UserPlus, Ruler, Eye } from 'lucide-react';
+import { FreteResumo } from '@/components/frete/FreteResumo';
 
 interface Transportador {
   id: string;
@@ -27,6 +28,11 @@ const tiposAnimal = [
   { value: "caprino", label: "Caprino" }
 ];
 
+const tiposCobranca = [
+  { value: "valor_fechado", label: "Valor Fechado" },
+  { value: "valor_km", label: "Valor por KM" }
+];
+
 export default function SolicitarFrete() {
   const { transportadorId } = useParams();
   const navigate = useNavigate();
@@ -36,12 +42,16 @@ export default function SolicitarFrete() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showNoCadastroModal, setShowNoCadastroModal] = useState(false);
+  const [showResumo, setShowResumo] = useState(false);
   
   const [origem, setOrigem] = useState('');
   const [destino, setDestino] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [descricao, setDescricao] = useState('');
   const [valorFrete, setValorFrete] = useState('');
+  const [tipoCobranca, setTipoCobranca] = useState('valor_fechado');
+  const [distanciaEstimada, setDistanciaEstimada] = useState('');
+  const [observacoesValor, setObservacoesValor] = useState('');
   const [dataPrevista, setDataPrevista] = useState('');
   const [tipoAnimal, setTipoAnimal] = useState('');
 
@@ -117,6 +127,9 @@ export default function SolicitarFrete() {
         quantidade_animais: parseInt(quantidade) || null,
         descricao,
         valor_frete: parseFloat(valorFrete) || null,
+        tipo_cobranca: tipoCobranca,
+        distancia_estimada: parseFloat(distanciaEstimada) || null,
+        observacoes_valor: observacoesValor || null,
         data_prevista: dataPrevista || null,
         tipo_animal: tipoAnimal
       });
@@ -196,32 +209,78 @@ export default function SolicitarFrete() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="quantidade">Quantidade de Animais *</Label>
-                  <Input
-                    id="quantidade"
-                    type="number"
-                    min="1"
-                    placeholder="Ex: 20"
-                    value={quantidade}
-                    onChange={(e) => setQuantidade(e.target.value)}
-                    required
-                  />
+              <div className="space-y-2">
+                <Label htmlFor="quantidade">Quantidade de Animais *</Label>
+                <Input
+                  id="quantidade"
+                  type="number"
+                  min="1"
+                  placeholder="Ex: 20"
+                  value={quantidade}
+                  onChange={(e) => setQuantidade(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Seção de Valor do Frete */}
+              <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+                <h3 className="font-medium flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  Valor do Frete
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="valorFrete">Valor Ofertado (R$) *</Label>
+                    <Input
+                      id="valorFrete"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Ex: 1500.00"
+                      value={valorFrete}
+                      onChange={(e) => setValorFrete(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tipoCobranca">Tipo de Cobrança</Label>
+                    <Select value={tipoCobranca} onValueChange={setTipoCobranca}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tiposCobranca.map((tipo) => (
+                          <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="valorFrete" className="flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    Valor do Frete (R$)
+                  <Label htmlFor="distanciaEstimada" className="flex items-center gap-1">
+                    <Ruler className="h-3 w-3" />
+                    Distância Estimada (km)
                   </Label>
                   <Input
-                    id="valorFrete"
+                    id="distanciaEstimada"
                     type="number"
-                    step="0.01"
                     min="0"
-                    placeholder="Ex: 1500.00"
-                    value={valorFrete}
-                    onChange={(e) => setValorFrete(e.target.value)}
+                    placeholder="Ex: 350"
+                    value={distanciaEstimada}
+                    onChange={(e) => setDistanciaEstimada(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="observacoesValor">Observações do Valor</Label>
+                  <Textarea
+                    id="observacoesValor"
+                    placeholder="Ex: Inclui pedágio, valor negociável..."
+                    value={observacoesValor}
+                    onChange={(e) => setObservacoesValor(e.target.value)}
+                    rows={2}
                   />
                 </div>
               </div>
@@ -242,7 +301,7 @@ export default function SolicitarFrete() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="descricao">Observações</Label>
+                <Label htmlFor="descricao">Observações Gerais</Label>
                 <Textarea
                   id="descricao"
                   placeholder="Informações adicionais sobre o frete..."
@@ -251,6 +310,19 @@ export default function SolicitarFrete() {
                   rows={3}
                 />
               </div>
+
+              {/* Botão de Visualizar Resumo */}
+              {origem && destino && tipoAnimal && quantidade && valorFrete && dataPrevista && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowResumo(true)}
+                  className="w-full gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  Visualizar Resumo antes de Enviar
+                </Button>
+              )}
 
               <div className="flex gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">
@@ -263,6 +335,45 @@ export default function SolicitarFrete() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Modal de Resumo */}
+        <Dialog open={showResumo} onOpenChange={setShowResumo}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Confirmar Solicitação de Frete</DialogTitle>
+              <DialogDescription>
+                Revise os dados antes de enviar sua solicitação.
+              </DialogDescription>
+            </DialogHeader>
+            <FreteResumo
+              origem={origem}
+              destino={destino}
+              tipoAnimal={tipoAnimal}
+              quantidade={parseInt(quantidade) || 0}
+              valorFrete={parseFloat(valorFrete) || 0}
+              tipoCobranca={tipoCobranca}
+              distanciaEstimada={distanciaEstimada ? parseFloat(distanciaEstimada) : undefined}
+              dataPrevista={dataPrevista}
+              observacoesValor={observacoesValor || undefined}
+              transportadorNome={transportador?.nome}
+            />
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowResumo(false)} className="flex-1">
+                Editar
+              </Button>
+              <Button
+                onClick={(e) => {
+                  setShowResumo(false);
+                  handleSubmit(e as any);
+                }}
+                disabled={submitting}
+                className="flex-1"
+              >
+                {submitting ? 'Enviando...' : 'Confirmar e Enviar'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Modal para usuários sem cadastro de produtor */}
         <Dialog open={showNoCadastroModal} onOpenChange={setShowNoCadastroModal}>

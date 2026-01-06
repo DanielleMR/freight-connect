@@ -101,14 +101,18 @@ export type Database = {
           data_prevista: string | null
           descricao: string | null
           destino: string | null
+          distancia_estimada: number | null
           id: string
+          observacoes_valor: string | null
           origem: string | null
           produtor_id: string
           quantidade_animais: number | null
           status: Database["public"]["Enums"]["frete_status"]
           tipo_animal: string | null
+          tipo_cobranca: string | null
           transportador_id: string
           updated_at: string | null
+          valor_contraproposta: number | null
           valor_frete: number | null
         }
         Insert: {
@@ -116,14 +120,18 @@ export type Database = {
           data_prevista?: string | null
           descricao?: string | null
           destino?: string | null
+          distancia_estimada?: number | null
           id?: string
+          observacoes_valor?: string | null
           origem?: string | null
           produtor_id: string
           quantidade_animais?: number | null
           status?: Database["public"]["Enums"]["frete_status"]
           tipo_animal?: string | null
+          tipo_cobranca?: string | null
           transportador_id: string
           updated_at?: string | null
+          valor_contraproposta?: number | null
           valor_frete?: number | null
         }
         Update: {
@@ -131,14 +139,18 @@ export type Database = {
           data_prevista?: string | null
           descricao?: string | null
           destino?: string | null
+          distancia_estimada?: number | null
           id?: string
+          observacoes_valor?: string | null
           origem?: string | null
           produtor_id?: string
           quantidade_animais?: number | null
           status?: Database["public"]["Enums"]["frete_status"]
           tipo_animal?: string | null
+          tipo_cobranca?: string | null
           transportador_id?: string
           updated_at?: string | null
+          valor_contraproposta?: number | null
           valor_frete?: number | null
         }
         Relationships: [
