@@ -95,8 +95,76 @@ export type Database = {
           },
         ]
       }
+      contratos: {
+        Row: {
+          aceito_em: string | null
+          aceito_por_user_id: string | null
+          created_at: string
+          frete_id: string
+          id: string
+          ip_aceite: string | null
+          produtor_id: string
+          status: string
+          texto_contrato: string
+          transportador_id: string
+          updated_at: string
+          versao_contrato: string
+        }
+        Insert: {
+          aceito_em?: string | null
+          aceito_por_user_id?: string | null
+          created_at?: string
+          frete_id: string
+          id?: string
+          ip_aceite?: string | null
+          produtor_id: string
+          status?: string
+          texto_contrato: string
+          transportador_id: string
+          updated_at?: string
+          versao_contrato?: string
+        }
+        Update: {
+          aceito_em?: string | null
+          aceito_por_user_id?: string | null
+          created_at?: string
+          frete_id?: string
+          id?: string
+          ip_aceite?: string | null
+          produtor_id?: string
+          status?: string
+          texto_contrato?: string
+          transportador_id?: string
+          updated_at?: string
+          versao_contrato?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_frete_id_fkey"
+            columns: ["frete_id"]
+            isOneToOne: true
+            referencedRelation: "fretes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_produtor_id_fkey"
+            columns: ["produtor_id"]
+            isOneToOne: false
+            referencedRelation: "produtores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fretes: {
         Row: {
+          contrato_aceito: boolean | null
           created_at: string | null
           data_prevista: string | null
           descricao: string | null
@@ -116,6 +184,7 @@ export type Database = {
           valor_frete: number | null
         }
         Insert: {
+          contrato_aceito?: boolean | null
           created_at?: string | null
           data_prevista?: string | null
           descricao?: string | null
@@ -135,6 +204,7 @@ export type Database = {
           valor_frete?: number | null
         }
         Update: {
+          contrato_aceito?: boolean | null
           created_at?: string | null
           data_prevista?: string | null
           descricao?: string | null
