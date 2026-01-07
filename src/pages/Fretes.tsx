@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { FreteTimeline } from '@/components/frete/FreteTimeline';
 
 type FreteStatus = Database['public']['Enums']['frete_status'];
 
@@ -23,6 +24,9 @@ interface Frete {
   descricao: string | null;
   tipo_animal: string | null;
   valor_frete: number | null;
+  valor_contraproposta: number | null;
+  tipo_cobranca: string | null;
+  distancia_estimada: number | null;
   data_prevista: string | null;
   created_at: string;
   produtor_id: string;
@@ -175,6 +179,9 @@ export default function Fretes() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {/* Timeline visual do frete */}
+                  <FreteTimeline status={frete.status} />
+                  
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     {frete.tipo_animal && (
                       <div>
@@ -207,6 +214,32 @@ export default function Fretes() {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Informações adicionais de valor */}
+                  {(frete.tipo_cobranca || frete.distancia_estimada || frete.valor_contraproposta) && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm bg-muted/50 p-2 rounded-md">
+                      {frete.tipo_cobranca && (
+                        <div>
+                          <span className="text-muted-foreground">Cobrança:</span>
+                          <p className="font-medium capitalize">
+                            {frete.tipo_cobranca === 'valor_fechado' ? 'Valor Fechado' : 'Por Km'}
+                          </p>
+                        </div>
+                      )}
+                      {frete.distancia_estimada && (
+                        <div>
+                          <span className="text-muted-foreground">Distância:</span>
+                          <p className="font-medium">{frete.distancia_estimada} km</p>
+                        </div>
+                      )}
+                      {frete.valor_contraproposta && (
+                        <div>
+                          <span className="text-muted-foreground">Contraproposta:</span>
+                          <p className="font-medium text-amber-600">{formatCurrency(frete.valor_contraproposta)}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {frete.transportadores && (
                     <div className="pt-2 border-t">
