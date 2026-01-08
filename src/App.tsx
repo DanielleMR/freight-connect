@@ -16,11 +16,13 @@ import AdminTransportadorNovo from "./pages/admin/AdminTransportadorNovo";
 import AdminProdutores from "./pages/admin/AdminProdutores";
 import AdminFretes from "./pages/admin/AdminFretes";
 import AdminAuditoria from "./pages/admin/AdminAuditoria";
+import AdminContratos from "./pages/admin/AdminContratos";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
 import TransportadorPainel from "./pages/transportador/TransportadorPainel";
 import MapaTransportadores from "./pages/mapa/MapaTransportadores";
+import ContratoFrete from "./pages/contrato/ContratoFrete";
 
 const queryClient = new QueryClient();
 
@@ -37,11 +39,13 @@ const App = () => (
             <Route path="/transportadores" element={<Transportadores />} />
             <Route path="/solicitar-frete/:transportadorId" element={<SolicitarFrete />} />
             <Route path="/fretes" element={<Fretes />} />
+            <Route path="/contrato/:freteId" element={<ContratoFrete />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/transportadores" element={<AdminTransportadores />} />
             <Route path="/admin/transportadores/novo" element={<AdminTransportadorNovo />} />
             <Route path="/admin/produtores" element={<AdminProdutores />} />
             <Route path="/admin/fretes" element={<AdminFretes />} />
+            <Route path="/admin/contratos" element={<AdminContratos />} />
             <Route path="/admin/auditoria" element={<AdminAuditoria />} />
             <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
             <Route path="/produtor/painel" element={<ProdutorPainel />} />

@@ -9,7 +9,7 @@ import { StarRating } from '@/components/ui/star-rating';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck, FileText, CheckCircle } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { FreteTimeline } from '@/components/frete/FreteTimeline';
 
@@ -30,6 +30,7 @@ interface Frete {
   data_prevista: string | null;
   created_at: string;
   produtor_id: string;
+  contrato_aceito: boolean | null;
   transportadores: {
     id: string;
     nome: string;
@@ -246,7 +247,7 @@ export default function Fretes() {
                       <p className="text-sm font-medium mb-2">Transportador: {frete.transportadores.nome}</p>
                       
                       {(frete.status === 'aceito' || frete.status === 'em_andamento' || frete.status === 'concluido') && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 mb-2">
                           <a 
                             href={`tel:${frete.transportadores.telefone}`}
                             className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
@@ -268,6 +269,20 @@ export default function Fretes() {
                           )}
                         </div>
                       )}
+                      
+                      {/* Link para o contrato */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => navigate(`/contrato/${frete.id}`)}
+                        className="gap-1"
+                      >
+                        <FileText className="h-3 w-3" />
+                        Ver Contrato
+                        {frete.contrato_aceito && (
+                          <CheckCircle className="h-3 w-3 text-green-600 ml-1" />
+                        )}
+                      </Button>
                     </div>
                   )}
 
