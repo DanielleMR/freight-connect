@@ -1,8 +1,10 @@
-import { CheckCircle, Circle, Clock, Truck, XCircle } from "lucide-react";
+import { CheckCircle, Circle, Clock, Truck, XCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface FreteTimelineProps {
   status: string;
+  contratoAceito?: boolean;
   className?: string;
 }
 
@@ -13,7 +15,7 @@ const steps = [
   { key: "concluido", label: "Concluído", icon: CheckCircle },
 ];
 
-export function FreteTimeline({ status, className }: FreteTimelineProps) {
+export function FreteTimeline({ status, contratoAceito, className }: FreteTimelineProps) {
   // Se recusado, mostrar linha especial
   if (status === "recusado") {
     return (
@@ -31,6 +33,16 @@ export function FreteTimeline({ status, className }: FreteTimelineProps) {
 
   return (
     <div className={cn("py-3", className)}>
+      {/* Badge de Contrato Aceito */}
+      {contratoAceito && (
+        <div className="mb-2">
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800">
+            <FileText className="h-3 w-3 mr-1" />
+            Contrato Aceito
+          </Badge>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between">
         {steps.map((step, index) => {
           const Icon = step.icon;
