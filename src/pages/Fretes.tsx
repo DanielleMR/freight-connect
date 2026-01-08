@@ -181,7 +181,7 @@ export default function Fretes() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Timeline visual do frete */}
-                  <FreteTimeline status={frete.status} />
+                  <FreteTimeline status={frete.status} contratoAceito={frete.contrato_aceito || false} />
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     {frete.tipo_animal && (
