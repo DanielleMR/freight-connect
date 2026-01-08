@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Truck, Package, LogOut, User, Star, History, CheckCircle, XCircle, Play, Phone, MessageCircle, DollarSign, Ruler, ArrowUpCircle } from "lucide-react";
+import { Truck, Package, LogOut, User, Star, History, CheckCircle, XCircle, Play, Phone, MessageCircle, DollarSign, Ruler, ArrowUpCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -425,11 +425,11 @@ const TransportadorPainel = () => {
                       {/* Botões de Ação */}
                       <div className="flex flex-wrap gap-2 pt-2 border-t">
                         <Button 
-                          onClick={() => handleUpdateStatus(frete.id, "aceito")}
+                          onClick={() => navigate(`/contrato/${frete.id}`)}
                           className="gap-2 flex-1 md:flex-none"
                         >
-                          <CheckCircle className="h-4 w-4" />
-                          Aceitar pelo Valor
+                          <FileText className="h-4 w-4" />
+                          Ver Contrato e Aceitar
                         </Button>
                         <Button 
                           variant="outline"
@@ -440,7 +440,7 @@ const TransportadorPainel = () => {
                           className="gap-2 flex-1 md:flex-none"
                         >
                           <ArrowUpCircle className="h-4 w-4" />
-                          Aceito por Valor Superior
+                          Contraproposta
                         </Button>
                         <Button 
                           variant="destructive"
