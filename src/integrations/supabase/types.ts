@@ -431,7 +431,37 @@ export type Database = {
         Returns: string
       }
       generate_public_id: { Args: { prefix: string }; Returns: string }
+      get_frete_by_public_id: {
+        Args: { p_public_id: string; p_user_id: string }
+        Returns: {
+          contrato_aceito: boolean
+          data_prevista: string
+          destino: string
+          id: string
+          origem: string
+          public_id: string
+          quantidade_animais: number
+          status: string
+          tipo_animal: string
+          transportador_nome: string
+          transportador_public_id: string
+          valor_frete: number
+        }[]
+      }
       get_produtor_name: { Args: { produtor_uuid: string }; Returns: string }
+      get_transportador_by_public_id: {
+        Args: { p_public_id: string }
+        Returns: {
+          ativo: boolean
+          capacidade_animais: number
+          id: string
+          nome: string
+          public_id: string
+          regiao_atendimento: string
+          tipo_animal: string
+          tipo_caminhao: string
+        }[]
+      }
       get_transportadores_directory: {
         Args: never
         Returns: {
@@ -441,6 +471,7 @@ export type Database = {
           latitude: number
           longitude: number
           nome: string
+          public_id: string
           regiao_atendimento: string
           tipo_animal: string
           tipo_caminhao: string
