@@ -118,7 +118,7 @@ const TransportadorCadastro = () => {
 
       if (roleError) throw roleError;
 
-      // 3. Criar perfil do transportador
+      // 3. Criar perfil do transportador (public_id é gerado automaticamente pelo banco)
       const { error: transportadorError } = await supabase
         .from("transportadores")
         .insert({
@@ -135,7 +135,7 @@ const TransportadorCadastro = () => {
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
           ativo: true
-        });
+        } as any);
 
       if (transportadorError) throw transportadorError;
 

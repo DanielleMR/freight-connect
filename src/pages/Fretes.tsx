@@ -17,6 +17,7 @@ type FreteStatus = Database['public']['Enums']['frete_status'];
 
 interface Frete {
   id: string;
+  public_id: string;
   status: FreteStatus;
   origem: string | null;
   destino: string | null;
@@ -33,6 +34,7 @@ interface Frete {
   contrato_aceito: boolean | null;
   transportadores: {
     id: string;
+    public_id: string;
     nome: string;
     telefone: string;
     whatsapp: string | null;
@@ -75,7 +77,7 @@ export default function Fretes() {
 
     const { data, error } = await supabase
       .from('fretes')
-      .select('*, transportadores(id, nome, telefone, whatsapp)')
+      .select('*, transportadores(id, public_id, nome, telefone, whatsapp)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -169,13 +171,16 @@ export default function Fretes() {
         ) : (
           <div className="grid gap-4">
             {fretes.map((frete) => (
-              <Card key={frete.id}>
+              <Card key={frete.public_id}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      {frete.origem} → {frete.destino}
-                    </CardTitle>
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        {frete.origem} → {frete.destino}
+                      </CardTitle>
+                      <span className="text-xs text-muted-foreground font-mono">{frete.public_id}</span>
+                    </div>
                     <StatusBadge status={frete.status} />
                   </div>
                 </CardHeader>
@@ -244,37 +249,46 @@ export default function Fretes() {
 
                   {frete.transportadores && (
                     <div className="pt-2 border-t">
-                      <p className="text-sm font-medium mb-2">Transportador: {frete.transportadores.nome}</p>
-                      
-                      {(frete.status === 'aceito' || frete.status === 'em_andamento' || frete.status === 'concluido') && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <a 
-                            href={`tel:${frete.transportadores.telefone}`}
-                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                          >
-                            <Phone className="h-3 w-3" />
-                            {frete.transportadores.telefone}
-                          </a>
-                          
-                          {frete.transportadores.whatsapp && (
+                      {/* Mostrar dados completos SOMENTE se contrato aceito */}
+                      {frete.contrato_aceito ? (
+                        <>
+                          <p className="text-sm font-medium mb-2">Transportador: {frete.transportadores.nome}</p>
+                          <div className="flex flex-wrap gap-2 mb-2">
                             <a 
-                              href={formatWhatsAppLink(frete.transportadores.whatsapp) || '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-sm text-green-600 hover:underline"
+                              href={`tel:${frete.transportadores.telefone}`}
+                              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                             >
-                              <MessageCircle className="h-3 w-3" />
-                              WhatsApp
+                              <Phone className="h-3 w-3" />
+                              {frete.transportadores.telefone}
                             </a>
-                          )}
+                            
+                            {frete.transportadores.whatsapp && (
+                              <a 
+                                href={formatWhatsAppLink(frete.transportadores.whatsapp) || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-sm text-green-600 hover:underline"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                                WhatsApp
+                              </a>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="mb-2">
+                          <p className="text-sm font-medium mb-1">Transportador: {frete.transportadores.public_id}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Dados de contato disponíveis após aceite do contrato
+                          </p>
                         </div>
                       )}
                       
-                      {/* Link para o contrato */}
+                      {/* Link para o contrato usando public_id */}
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => navigate(`/contrato/${frete.id}`)}
+                        onClick={() => navigate(`/contrato/${frete.public_id}`)}
                         className="gap-1"
                       >
                         <FileText className="h-3 w-3" />

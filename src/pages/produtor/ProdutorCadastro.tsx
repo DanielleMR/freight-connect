@@ -65,7 +65,7 @@ const ProdutorCadastro = () => {
 
       if (roleError) throw roleError;
 
-      // 3. Criar perfil do produtor
+      // 3. Criar perfil do produtor (public_id é gerado automaticamente pelo banco)
       const { error: produtorError } = await supabase
         .from("produtores")
         .insert({
@@ -75,7 +75,7 @@ const ProdutorCadastro = () => {
           telefone: formData.telefone,
           cidade: formData.cidade || null,
           estado: formData.estado || null
-        });
+        } as any);
 
       if (produtorError) throw produtorError;
 

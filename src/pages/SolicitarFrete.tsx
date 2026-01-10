@@ -34,11 +34,12 @@ const tiposCobranca = [
 ];
 
 export default function SolicitarFrete() {
-  const { transportadorId } = useParams();
+  const { transportadorPublicId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const [transportador, setTransportador] = useState<Transportador | null>(null);
+  const [transportadorId, setTransportadorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showNoCadastroModal, setShowNoCadastroModal] = useState(false);
@@ -56,26 +57,32 @@ export default function SolicitarFrete() {
   const [tipoAnimal, setTipoAnimal] = useState('');
 
   useEffect(() => {
-    if (transportadorId) {
+    if (transportadorPublicId) {
       fetchTransportador();
     }
-  }, [transportadorId]);
+  }, [transportadorPublicId]);
 
   const fetchTransportador = async () => {
+    // Buscar transportador pelo public_id usando a função segura
     const { data, error } = await supabase
-      .from('transportadores')
-      .select('id, nome, telefone, capacidade_animais, tipo_animal')
-      .eq('id', transportadorId)
-      .single();
+      .rpc('get_transportador_by_public_id', { p_public_id: transportadorPublicId });
 
-    if (error) {
+    if (error || !data || data.length === 0) {
       console.error('Error fetching transportador:', error);
       toast({ title: 'Erro', description: 'Transportador não encontrado', variant: 'destructive' });
       navigate('/transportadores');
     } else {
-      setTransportador(data);
-      if (data.tipo_animal) {
-        setTipoAnimal(data.tipo_animal);
+      const t = data[0];
+      setTransportador({
+        id: t.id,
+        nome: t.nome,
+        telefone: '', // Dados sensíveis não são retornados pela função pública
+        capacidade_animais: t.capacidade_animais,
+        tipo_animal: t.tipo_animal
+      });
+      setTransportadorId(t.id);
+      if (t.tipo_animal) {
+        setTipoAnimal(t.tipo_animal);
       }
     }
     setLoading(false);
@@ -117,6 +124,7 @@ export default function SolicitarFrete() {
       return;
     }
 
+    // public_id é gerado automaticamente pelo banco
     const { error } = await supabase
       .from('fretes')
       .insert({
@@ -132,7 +140,7 @@ export default function SolicitarFrete() {
         observacoes_valor: observacoesValor || null,
         data_prevista: dataPrevista || null,
         tipo_animal: tipoAnimal
-      });
+      } as any);
 
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });

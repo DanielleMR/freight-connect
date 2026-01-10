@@ -55,11 +55,12 @@ interface FreteData {
 }
 
 export default function ContratoFrete() {
-  const { freteId } = useParams<{ freteId: string }>();
+  const { fretePublicId } = useParams<{ fretePublicId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [contrato, setContrato] = useState<Contrato | null>(null);
   const [freteData, setFreteData] = useState<FreteData | null>(null);
+  const [freteId, setFreteId] = useState<string | null>(null);
   const [concordo, setConcordo] = useState(false);
   const [aceitando, setAceitando] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -67,10 +68,10 @@ export default function ContratoFrete() {
 
   useEffect(() => {
     fetchContrato();
-  }, [freteId]);
+  }, [fretePublicId]);
 
   const fetchContrato = async () => {
-    if (!freteId) return;
+    if (!fretePublicId) return;
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -90,7 +91,7 @@ export default function ContratoFrete() {
       setUserRole(roleData.role);
     }
 
-    // Buscar dados do frete
+    // Buscar dados do frete pelo public_id
     const { data: frete, error: freteError } = await supabase
       .from('fretes')
       .select(`
@@ -98,7 +99,7 @@ export default function ContratoFrete() {
         produtores(id, nome, cpf_cnpj, telefone, cidade, estado),
         transportadores(id, nome, cpf_cnpj, telefone, placa_veiculo)
       `)
-      .eq('id', freteId)
+      .eq('public_id', fretePublicId)
       .maybeSingle();
 
     if (freteError || !frete) {
@@ -108,12 +109,13 @@ export default function ContratoFrete() {
     }
 
     setFreteData(frete as unknown as FreteData);
+    setFreteId(frete.id);
 
-    // Buscar contrato existente
+    // Buscar contrato existente usando o ID real do frete
     const { data: contratoData } = await supabase
       .from('contratos')
       .select('*')
-      .eq('frete_id', freteId)
+      .eq('frete_id', frete.id)
       .maybeSingle();
 
     if (contratoData) {

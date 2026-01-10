@@ -8,6 +8,7 @@ import { Truck, MapPin, ArrowLeft } from 'lucide-react';
 
 interface TransportadorDirectory {
   id: string;
+  public_id: string;
   nome: string;
   tipo_animal: string | null;
   regiao_atendimento: string | null;
@@ -71,19 +72,17 @@ export default function Transportadores() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {transportadores.map((t) => (
-              <Card key={t.id} className="hover:shadow-lg transition-shadow">
+              <Card key={t.public_id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Truck className="h-5 w-5 text-primary" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Truck className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{t.nome}</CardTitle>
+                        <span className="text-xs text-muted-foreground font-mono">{t.public_id}</span>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{t.nome}</CardTitle>
-                      <Badge variant="secondary" className="text-xs">
-                        Disponível
-                      </Badge>
-                    </div>
-                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm text-muted-foreground mb-4">
@@ -115,7 +114,7 @@ export default function Transportadores() {
                   
                   <Button
                     className="w-full"
-                    onClick={() => navigate(`/solicitar-frete/${t.id}`)}
+                    onClick={() => navigate(`/solicitar-frete/${t.public_id}`)}
                   >
                     Solicitar Frete
                   </Button>

@@ -37,9 +37,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/transportadores" element={<Transportadores />} />
-            <Route path="/solicitar-frete/:transportadorId" element={<SolicitarFrete />} />
+            <Route path="/solicitar-frete/:transportadorPublicId" element={<SolicitarFrete />} />
             <Route path="/fretes" element={<Fretes />} />
-            <Route path="/contrato/:freteId" element={<ContratoFrete />} />
+            <Route path="/contrato/:fretePublicId" element={<ContratoFrete />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/transportadores" element={<AdminTransportadores />} />
             <Route path="/admin/transportadores/novo" element={<AdminTransportadorNovo />} />

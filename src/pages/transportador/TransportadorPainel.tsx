@@ -32,6 +32,7 @@ interface Transportador {
 
 interface Frete {
   id: string;
+  public_id: string;
   origem: string | null;
   destino: string | null;
   quantidade_animais: number | null;
@@ -46,11 +47,13 @@ interface Frete {
   descricao: string | null;
   created_at: string;
   produtor_id: string;
+  contrato_aceito: boolean | null;
   produtor?: {
     nome: string;
     telefone: string;
     cidade: string | null;
     estado: string | null;
+    public_id: string;
   } | null;
 }
 
@@ -144,7 +147,7 @@ const TransportadorPainel = () => {
         data.map(async (frete) => {
           const { data: produtorData } = await supabase
             .from("produtores")
-            .select("nome, telefone, cidade, estado")
+            .select("nome, telefone, cidade, estado, public_id")
             .eq("id", frete.produtor_id)
             .maybeSingle();
           
@@ -365,7 +368,7 @@ const TransportadorPainel = () => {
               </Card>
             ) : (
               fretesPendentes.map((frete) => (
-                <Card key={frete.id} className="border-l-4 border-l-amber-500">
+                <Card key={frete.public_id} className="border-l-4 border-l-amber-500">
                   <CardContent className="p-4">
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center gap-2">
@@ -425,7 +428,7 @@ const TransportadorPainel = () => {
                       {/* Botões de Ação */}
                       <div className="flex flex-wrap gap-2 pt-2 border-t">
                         <Button 
-                          onClick={() => navigate(`/contrato/${frete.id}`)}
+                          onClick={() => navigate(`/contrato/${frete.public_id}`)}
                           className="gap-2 flex-1 md:flex-none"
                         >
                           <FileText className="h-4 w-4" />
@@ -468,7 +471,7 @@ const TransportadorPainel = () => {
               </Card>
             ) : (
               fretesAtivos.map((frete) => (
-                <Card key={frete.id} className="border-l-4 border-l-blue-500">
+                <Card key={frete.public_id} className="border-l-4 border-l-blue-500">
                   <CardContent className="p-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
@@ -485,8 +488,8 @@ const TransportadorPainel = () => {
                           <span>📅 {formatDate(frete.data_prevista)}</span>
                         </div>
 
-                        {/* Contato do produtor - dados reais */}
-                        {(frete.status === 'aceito' || frete.status === 'em_andamento') && frete.produtor && (
+                        {/* Contato do produtor - dados reais SOMENTE se contrato aceito */}
+                        {frete.contrato_aceito && frete.produtor && (
                           <div className="mt-3 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                             <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
                               Contato do Produtor
@@ -516,6 +519,18 @@ const TransportadorPainel = () => {
                                   WhatsApp
                                 </a>
                               </div>
+                            </div>
+                          </div>
+                        )}
+                        {/* Dados mascarados se contrato NÃO aceito */}
+                        {!frete.contrato_aceito && frete.produtor && (
+                          <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                              Produtor (dados protegidos)
+                            </p>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <p>ID: {frete.produtor.public_id}</p>
+                              <p>Aceite o contrato para ver dados de contato</p>
                             </div>
                           </div>
                         )}
@@ -557,7 +572,7 @@ const TransportadorPainel = () => {
               </Card>
             ) : (
               fretesHistorico.map((frete) => (
-                <Card key={frete.id} className={`border-l-4 ${frete.status === 'concluido' ? 'border-l-gray-400' : 'border-l-red-400'}`}>
+                <Card key={frete.public_id} className={`border-l-4 ${frete.status === 'concluido' ? 'border-l-gray-400' : 'border-l-red-400'}`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>

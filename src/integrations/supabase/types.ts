@@ -195,7 +195,7 @@ export type Database = {
           observacoes_valor?: string | null
           origem?: string | null
           produtor_id: string
-          public_id: string
+          public_id?: string
           quantidade_animais?: number | null
           status?: Database["public"]["Enums"]["frete_status"]
           tipo_animal?: string | null
@@ -299,7 +299,7 @@ export type Database = {
           estado?: string | null
           id?: string
           nome: string
-          public_id: string
+          public_id?: string
           telefone: string
           updated_at?: string
           user_id: string
@@ -366,7 +366,7 @@ export type Database = {
           longitude?: number | null
           nome: string
           placa_veiculo?: string | null
-          public_id: string
+          public_id?: string
           regiao_atendimento?: string | null
           telefone: string
           tipo_animal?: string | null
@@ -430,6 +430,9 @@ export type Database = {
         }
         Returns: string
       }
+      generate_default_frete_id: { Args: never; Returns: string }
+      generate_default_produtor_id: { Args: never; Returns: string }
+      generate_default_transportador_id: { Args: never; Returns: string }
       generate_public_id: { Args: { prefix: string }; Returns: string }
       get_frete_by_public_id: {
         Args: { p_public_id: string; p_user_id: string }
