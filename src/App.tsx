@@ -17,6 +17,8 @@ import AdminProdutores from "./pages/admin/AdminProdutores";
 import AdminFretes from "./pages/admin/AdminFretes";
 import AdminAuditoria from "./pages/admin/AdminAuditoria";
 import AdminContratos from "./pages/admin/AdminContratos";
+import AdminDocumentos from "./pages/admin/AdminDocumentos";
+import AdminChats from "./pages/admin/AdminChats";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
@@ -46,6 +48,8 @@ const App = () => (
             <Route path="/admin/produtores" element={<AdminProdutores />} />
             <Route path="/admin/fretes" element={<AdminFretes />} />
             <Route path="/admin/contratos" element={<AdminContratos />} />
+            <Route path="/admin/documentos" element={<AdminDocumentos />} />
+            <Route path="/admin/chats" element={<AdminChats />} />
             <Route path="/admin/auditoria" element={<AdminAuditoria />} />
             <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
             <Route path="/produtor/painel" element={<ProdutorPainel />} />
