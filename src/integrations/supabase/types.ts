@@ -162,6 +162,51 @@ export type Database = {
           },
         ]
       }
+      documentos: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          arquivo_nome: string
+          arquivo_url: string
+          created_at: string
+          id: string
+          motivo_reprovacao: string | null
+          status: Database["public"]["Enums"]["documento_status"]
+          tipo_documento: Database["public"]["Enums"]["documento_tipo"]
+          updated_at: string
+          user_id: string
+          user_tipo: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          arquivo_nome: string
+          arquivo_url: string
+          created_at?: string
+          id?: string
+          motivo_reprovacao?: string | null
+          status?: Database["public"]["Enums"]["documento_status"]
+          tipo_documento: Database["public"]["Enums"]["documento_tipo"]
+          updated_at?: string
+          user_id: string
+          user_tipo: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          arquivo_nome?: string
+          arquivo_url?: string
+          created_at?: string
+          id?: string
+          motivo_reprovacao?: string | null
+          status?: Database["public"]["Enums"]["documento_status"]
+          tipo_documento?: Database["public"]["Enums"]["documento_tipo"]
+          updated_at?: string
+          user_id?: string
+          user_tipo?: string
+        }
+        Relationships: []
+      }
       fretes: {
         Row: {
           contrato_aceito: boolean | null
@@ -239,6 +284,53 @@ export type Database = {
             columns: ["transportador_id"]
             isOneToOne: false
             referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mensagens_chat: {
+        Row: {
+          arquivo_tipo: string | null
+          arquivo_url: string | null
+          bloqueada: boolean
+          conteudo: string
+          created_at: string
+          frete_id: string
+          id: string
+          motivo_bloqueio: string | null
+          sender_tipo: string
+          sender_user_id: string
+        }
+        Insert: {
+          arquivo_tipo?: string | null
+          arquivo_url?: string | null
+          bloqueada?: boolean
+          conteudo: string
+          created_at?: string
+          frete_id: string
+          id?: string
+          motivo_bloqueio?: string | null
+          sender_tipo: string
+          sender_user_id: string
+        }
+        Update: {
+          arquivo_tipo?: string | null
+          arquivo_url?: string | null
+          bloqueada?: boolean
+          conteudo?: string
+          created_at?: string
+          frete_id?: string
+          id?: string
+          motivo_bloqueio?: string | null
+          sender_tipo?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_chat_frete_id_fkey"
+            columns: ["frete_id"]
+            isOneToOne: false
+            referencedRelation: "fretes"
             referencedColumns: ["id"]
           },
         ]
@@ -497,9 +589,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      usuario_aprovado_para_contrato: {
+        Args: { p_user_id: string; p_user_tipo: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "produtor" | "transportador"
+      documento_status: "pendente" | "aprovado" | "reprovado"
+      documento_tipo:
+        | "cpf_cnpj"
+        | "documento_pessoal"
+        | "cnh"
+        | "crlv"
+        | "documento_veiculo"
       frete_status:
         | "solicitado"
         | "aceito"
@@ -634,6 +737,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "produtor", "transportador"],
+      documento_status: ["pendente", "aprovado", "reprovado"],
+      documento_tipo: [
+        "cpf_cnpj",
+        "documento_pessoal",
+        "cnh",
+        "crlv",
+        "documento_veiculo",
+      ],
       frete_status: [
         "solicitado",
         "aceito",

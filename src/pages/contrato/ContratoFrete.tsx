@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ContratoTexto, gerarTextoContrato } from '@/components/contrato/ContratoTexto';
-import { ArrowLeft, FileText, CheckCircle, Clock, Shield } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, Clock, Shield, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { FreteChat } from '@/components/chat/FreteChat';
 import { ptBR } from 'date-fns/locale';
 
 interface Contrato {
@@ -355,6 +357,16 @@ export default function ContratoFrete() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Chat do Frete */}
+        {freteId && fretePublicId && userId && userRole && (
+          <FreteChat
+            freteId={freteId}
+            fretePublicId={fretePublicId}
+            currentUserId={userId}
+            currentUserType={userRole as 'produtor' | 'transportador' | 'admin'}
+          />
         )}
       </div>
     </div>
