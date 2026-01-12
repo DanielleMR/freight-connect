@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { FreteChat } from '@/components/chat/FreteChat';
-import { ptBR } from 'date-fns/locale';
 
 interface Contrato {
   id: string;
