@@ -19,10 +19,12 @@ import AdminAuditoria from "./pages/admin/AdminAuditoria";
 import AdminContratos from "./pages/admin/AdminContratos";
 import AdminDocumentos from "./pages/admin/AdminDocumentos";
 import AdminChats from "./pages/admin/AdminChats";
+import AdminFinanceiro from "./pages/admin/AdminFinanceiro";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
 import TransportadorPainel from "./pages/transportador/TransportadorPainel";
+import TransportadorFinanceiro from "./pages/transportador/TransportadorFinanceiro";
 import MapaTransportadores from "./pages/mapa/MapaTransportadores";
 import ContratoFrete from "./pages/contrato/ContratoFrete";
 
@@ -50,11 +52,13 @@ const App = () => (
             <Route path="/admin/contratos" element={<AdminContratos />} />
             <Route path="/admin/documentos" element={<AdminDocumentos />} />
             <Route path="/admin/chats" element={<AdminChats />} />
+            <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
             <Route path="/admin/auditoria" element={<AdminAuditoria />} />
             <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
             <Route path="/produtor/painel" element={<ProdutorPainel />} />
             <Route path="/transportador/cadastro" element={<TransportadorCadastro />} />
             <Route path="/transportador/painel" element={<TransportadorPainel />} />
+            <Route path="/transportador/financeiro" element={<TransportadorFinanceiro />} />
             <Route path="/mapa/transportadores" element={<MapaTransportadores />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -22,6 +22,7 @@ interface TransportadorDirectory {
   ativo: boolean;
   latitude: number | null;
   longitude: number | null;
+  destaque_mapa?: boolean;
 }
 
 const tiposCaminhao = [

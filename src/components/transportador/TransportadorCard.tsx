@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Truck, MapPin } from "lucide-react";
+import { Truck, MapPin, Crown } from "lucide-react";
 
 interface Transportador {
   id: string;
@@ -11,6 +11,7 @@ interface Transportador {
   capacidade_animais: number | null;
   tipo_caminhao: string | null;
   ativo: boolean;
+  destaque_mapa?: boolean;
 }
 
 interface TransportadorCardProps {
@@ -35,17 +36,24 @@ const tiposAnimal: Record<string, string> = {
 
 const TransportadorCard = ({ transportador: t, onSelect }: TransportadorCardProps) => {
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className={`hover:shadow-lg transition-shadow ${t.destaque_mapa ? 'border-yellow-500 ring-1 ring-yellow-500/20' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              t.ativo ? "bg-primary/10" : "bg-muted"
+              t.destaque_mapa ? "bg-yellow-100 dark:bg-yellow-900/30" : t.ativo ? "bg-primary/10" : "bg-muted"
             }`}>
-              <Truck className={`h-5 w-5 ${t.ativo ? "text-primary" : "text-muted-foreground"}`} />
+              <Truck className={`h-5 w-5 ${t.destaque_mapa ? "text-yellow-600" : t.ativo ? "text-primary" : "text-muted-foreground"}`} />
             </div>
             <div>
-              <h3 className="font-semibold">{t.nome}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold">{t.nome}</h3>
+                {t.destaque_mapa && (
+                  <Badge className="bg-yellow-500 text-xs gap-1">
+                    <Crown className="h-3 w-3" /> PRO
+                  </Badge>
+                )}
+              </div>
               <Badge variant={t.ativo ? "secondary" : "outline"} className="text-xs">
                 {t.ativo ? "Disponível" : "Indisponível"}
               </Badge>

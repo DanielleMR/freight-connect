@@ -103,9 +103,11 @@ export type Database = {
           frete_id: string
           id: string
           ip_aceite: string | null
+          pagamento_id: string | null
           produtor_id: string
           status: string
           texto_contrato: string
+          tipo_monetizacao: string | null
           transportador_id: string
           updated_at: string
           versao_contrato: string
@@ -117,9 +119,11 @@ export type Database = {
           frete_id: string
           id?: string
           ip_aceite?: string | null
+          pagamento_id?: string | null
           produtor_id: string
           status?: string
           texto_contrato: string
+          tipo_monetizacao?: string | null
           transportador_id: string
           updated_at?: string
           versao_contrato?: string
@@ -131,9 +135,11 @@ export type Database = {
           frete_id?: string
           id?: string
           ip_aceite?: string | null
+          pagamento_id?: string | null
           produtor_id?: string
           status?: string
           texto_contrato?: string
+          tipo_monetizacao?: string | null
           transportador_id?: string
           updated_at?: string
           versao_contrato?: string
@@ -144,6 +150,13 @@ export type Database = {
             columns: ["frete_id"]
             isOneToOne: true
             referencedRelation: "fretes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_pagamento_id_fkey"
+            columns: ["pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "pagamentos"
             referencedColumns: ["id"]
           },
           {
@@ -218,6 +231,7 @@ export type Database = {
           id: string
           observacoes_valor: string | null
           origem: string | null
+          pagamento_confirmado: boolean
           produtor_id: string
           public_id: string
           quantidade_animais: number | null
@@ -239,6 +253,7 @@ export type Database = {
           id?: string
           observacoes_valor?: string | null
           origem?: string | null
+          pagamento_confirmado?: boolean
           produtor_id: string
           public_id?: string
           quantidade_animais?: number | null
@@ -260,6 +275,7 @@ export type Database = {
           id?: string
           observacoes_valor?: string | null
           origem?: string | null
+          pagamento_confirmado?: boolean
           produtor_id?: string
           public_id?: string
           quantidade_animais?: number | null
@@ -371,6 +387,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pagamentos: {
+        Row: {
+          created_at: string
+          frete_id: string | null
+          id: string
+          observacoes: string | null
+          pago_em: string | null
+          percentual_comissao: number | null
+          referencia_externa: string | null
+          status: Database["public"]["Enums"]["pagamento_status"]
+          tipo: string
+          transportador_id: string
+          valor_base: number | null
+          valor_comissao: number | null
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          frete_id?: string | null
+          id?: string
+          observacoes?: string | null
+          pago_em?: string | null
+          percentual_comissao?: number | null
+          referencia_externa?: string | null
+          status?: Database["public"]["Enums"]["pagamento_status"]
+          tipo: string
+          transportador_id: string
+          valor_base?: number | null
+          valor_comissao?: number | null
+          valor_total: number
+        }
+        Update: {
+          created_at?: string
+          frete_id?: string | null
+          id?: string
+          observacoes?: string | null
+          pago_em?: string | null
+          percentual_comissao?: number | null
+          referencia_externa?: string | null
+          status?: Database["public"]["Enums"]["pagamento_status"]
+          tipo?: string
+          transportador_id?: string
+          valor_base?: number | null
+          valor_comissao?: number | null
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_frete_id_fkey"
+            columns: ["frete_id"]
+            isOneToOne: false
+            referencedRelation: "fretes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtores: {
         Row: {
           cidade: string | null
@@ -434,11 +513,14 @@ export type Database = {
           capacidade_animais: number | null
           cpf_cnpj: string | null
           created_at: string | null
+          destaque_mapa: boolean
           id: string
           latitude: number | null
           longitude: number | null
           nome: string
           placa_veiculo: string | null
+          plano_ativo_ate: string | null
+          plano_tipo: Database["public"]["Enums"]["plano_tipo"]
           public_id: string
           regiao_atendimento: string | null
           telefone: string
@@ -453,11 +535,14 @@ export type Database = {
           capacidade_animais?: number | null
           cpf_cnpj?: string | null
           created_at?: string | null
+          destaque_mapa?: boolean
           id?: string
           latitude?: number | null
           longitude?: number | null
           nome: string
           placa_veiculo?: string | null
+          plano_ativo_ate?: string | null
+          plano_tipo?: Database["public"]["Enums"]["plano_tipo"]
           public_id?: string
           regiao_atendimento?: string | null
           telefone: string
@@ -472,11 +557,14 @@ export type Database = {
           capacidade_animais?: number | null
           cpf_cnpj?: string | null
           created_at?: string | null
+          destaque_mapa?: boolean
           id?: string
           latitude?: number | null
           longitude?: number | null
           nome?: string
           placa_veiculo?: string | null
+          plano_ativo_ate?: string | null
+          plano_tipo?: Database["public"]["Enums"]["plano_tipo"]
           public_id?: string
           regiao_atendimento?: string | null
           telefone?: string
@@ -511,6 +599,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calcular_comissao_frete: {
+        Args: { p_transportador_id: string; p_valor_frete: number }
+        Returns: {
+          percentual: number
+          tipo: string
+          valor_comissao: number
+        }[]
+      }
+      confirmar_pagamento: {
+        Args: { p_pagamento_id: string }
+        Returns: boolean
+      }
+      criar_assinatura_pro: {
+        Args: { p_transportador_id: string }
+        Returns: string
+      }
       criar_notificacao: {
         Args: {
           p_mensagem?: string
@@ -522,6 +626,15 @@ export type Database = {
         }
         Returns: string
       }
+      criar_pagamento_comissao: {
+        Args: {
+          p_frete_id: string
+          p_transportador_id: string
+          p_valor_frete: number
+        }
+        Returns: string
+      }
+      frete_pode_avancar: { Args: { p_frete_id: string }; Returns: boolean }
       generate_default_frete_id: { Args: never; Returns: string }
       generate_default_produtor_id: { Args: never; Returns: string }
       generate_default_transportador_id: { Args: never; Returns: string }
@@ -589,6 +702,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      transportador_tem_plano_pro: {
+        Args: { p_transportador_id: string }
+        Returns: boolean
+      }
       usuario_aprovado_para_contrato: {
         Args: { p_user_id: string; p_user_tipo: string }
         Returns: boolean
@@ -609,6 +726,8 @@ export type Database = {
         | "recusado"
         | "em_andamento"
         | "concluido"
+      pagamento_status: "pendente" | "pago" | "cancelado"
+      plano_tipo: "free" | "pro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -752,6 +871,8 @@ export const Constants = {
         "em_andamento",
         "concluido",
       ],
+      pagamento_status: ["pendente", "pago", "cancelado"],
+      plano_tipo: ["free", "pro"],
     },
   },
 } as const
