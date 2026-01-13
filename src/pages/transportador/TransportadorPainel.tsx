@@ -48,6 +48,7 @@ interface Frete {
   created_at: string;
   produtor_id: string;
   contrato_aceito: boolean | null;
+  pagamento_confirmado: boolean;
   produtor?: {
     nome: string;
     telefone: string;
@@ -177,17 +178,36 @@ const TransportadorPainel = () => {
   };
 
   const handleUpdateStatus = async (freteId: string, newStatus: "aceito" | "recusado" | "em_andamento" | "concluido") => {
-    const { error } = await supabase
-      .from("fretes")
-      .update({ status: newStatus })
-      .eq("id", freteId);
+    // Para status que requerem pagamento, usar função validada
+    if (newStatus === 'em_andamento' || newStatus === 'concluido') {
+      const { data, error } = await supabase.rpc('validar_e_avancar_frete', {
+        p_frete_id: freteId,
+        p_novo_status: newStatus
+      });
 
-    if (error) {
-      toast.error(error.message);
+      if (error) {
+        if (error.message.includes('Pagamento não confirmado')) {
+          toast.error('⚠️ Pagamento não confirmado. Complete o pagamento antes de avançar.');
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
     } else {
-      toast.success(`Frete ${newStatus === 'aceito' ? 'aceito' : newStatus === 'recusado' ? 'recusado' : 'atualizado'}!`);
-      if (transportador) fetchFretes(transportador.id);
+      // Para aceito/recusado, atualizar diretamente
+      const { error } = await supabase
+        .from("fretes")
+        .update({ status: newStatus })
+        .eq("id", freteId);
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
     }
+
+    toast.success(`Frete ${newStatus === 'aceito' ? 'aceito' : newStatus === 'recusado' ? 'recusado' : 'atualizado'}!`);
+    if (transportador) fetchFretes(transportador.id);
   };
 
   const handleContraproposta = async (freteId: string) => {
@@ -488,11 +508,11 @@ const TransportadorPainel = () => {
                           <span>📅 {formatDate(frete.data_prevista)}</span>
                         </div>
 
-                        {/* Contato do produtor - dados reais SOMENTE se contrato aceito */}
-                        {frete.contrato_aceito && frete.produtor && (
+                        {/* Contato do produtor - dados reais SOMENTE se contrato aceito E pagamento confirmado */}
+                        {frete.contrato_aceito && frete.pagamento_confirmado && frete.produtor && (
                           <div className="mt-3 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                             <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
-                              Contato do Produtor
+                              ✅ Contato do Produtor (Liberado)
                             </p>
                             <div className="space-y-1 text-sm">
                               <p className="font-medium">{frete.produtor.nome}</p>
@@ -522,15 +542,27 @@ const TransportadorPainel = () => {
                             </div>
                           </div>
                         )}
-                        {/* Dados mascarados se contrato NÃO aceito */}
-                        {!frete.contrato_aceito && frete.produtor && (
-                          <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+                        {/* Contrato aceito mas pagamento pendente */}
+                        {frete.contrato_aceito && !frete.pagamento_confirmado && frete.produtor && (
+                          <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-300">
                             <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
-                              Produtor (dados protegidos)
+                              ⏳ Aguardando Pagamento
                             </p>
                             <div className="space-y-1 text-sm text-muted-foreground">
                               <p>ID: {frete.produtor.public_id}</p>
-                              <p>Aceite o contrato para ver dados de contato</p>
+                              <p>Complete o pagamento para liberar os dados de contato</p>
+                            </div>
+                          </div>
+                        )}
+                        {/* Dados mascarados se contrato NÃO aceito */}
+                        {!frete.contrato_aceito && frete.produtor && (
+                          <div className="mt-3 bg-muted p-3 rounded-lg">
+                            <p className="text-sm font-medium text-muted-foreground mb-2">
+                              🔒 Produtor (dados protegidos)
+                            </p>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <p>ID: {frete.produtor.public_id}</p>
+                              <p>Aceite o contrato e efetue o pagamento para ver dados de contato</p>
                             </div>
                           </div>
                         )}

@@ -692,6 +692,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      inserir_auditoria_sistema: {
+        Args: {
+          p_acao: string
+          p_dados_anteriores?: Json
+          p_dados_novos?: Json
+          p_registro_id?: string
+          p_tabela: string
+        }
+        Returns: string
+      }
       registrar_auditoria: {
         Args: {
           p_acao: string
@@ -708,6 +718,10 @@ export type Database = {
       }
       usuario_aprovado_para_contrato: {
         Args: { p_user_id: string; p_user_tipo: string }
+        Returns: boolean
+      }
+      validar_e_avancar_frete: {
+        Args: { p_frete_id: string; p_novo_status: string }
         Returns: boolean
       }
     }

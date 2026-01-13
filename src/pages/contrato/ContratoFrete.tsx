@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ContratoTexto, gerarTextoContrato } from '@/components/contrato/ContratoTexto';
-import { ArrowLeft, FileText, CheckCircle, Clock, Shield, MessageCircle } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, Clock, Shield, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { FreteChat } from '@/components/chat/FreteChat';
+import { PagamentoModal } from '@/components/monetizacao/PagamentoModal';
 
 interface Contrato {
   id: string;
@@ -24,6 +25,7 @@ interface Contrato {
   aceito_em: string | null;
   ip_aceite: string | null;
   created_at: string;
+  tipo_monetizacao: string | null;
 }
 
 interface FreteData {
@@ -38,6 +40,7 @@ interface FreteData {
   data_prevista: string | null;
   descricao: string | null;
   status: string;
+  pagamento_confirmado: boolean;
   produtores: {
     id: string;
     nome: string;
@@ -66,6 +69,8 @@ export default function ContratoFrete() {
   const [aceitando, setAceitando] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showPagamentoModal, setShowPagamentoModal] = useState(false);
+  const [temPlanoProAtivo, setTemPlanoProAtivo] = useState(false);
 
   useEffect(() => {
     fetchContrato();
@@ -112,6 +117,14 @@ export default function ContratoFrete() {
     setFreteData(frete as unknown as FreteData);
     setFreteId(frete.id);
 
+    // Verificar se transportador tem plano Pro ativo
+    if (frete.transportadores?.id) {
+      const { data: temPro } = await supabase.rpc('transportador_tem_plano_pro', {
+        p_transportador_id: frete.transportadores.id
+      });
+      setTemPlanoProAtivo(temPro || false);
+    }
+
     // Buscar contrato existente usando o ID real do frete
     const { data: contratoData } = await supabase
       .from('contratos')
@@ -126,13 +139,46 @@ export default function ContratoFrete() {
     setLoading(false);
   };
 
-  const handleAceitarContrato = async () => {
-    if (!concordo || !freteData || !userId) return;
+  const handleIniciarAceite = () => {
+    if (!concordo || !freteData) return;
+    
+    // Se já tem plano Pro, não precisa pagar
+    if (temPlanoProAtivo) {
+      handleAceitarContrato(true);
+    } else {
+      // Abre modal de pagamento
+      setShowPagamentoModal(true);
+    }
+  };
+
+  const handlePagamentoConfirmado = () => {
+    // Após pagamento confirmado, aceita o contrato
+    handleAceitarContrato(false);
+  };
+
+  const handleAceitarContrato = async (isPro: boolean) => {
+    if (!freteData || !userId) return;
 
     setAceitando(true);
 
     try {
-      // Obter IP do cliente (através de um serviço externo)
+      // Verificar se pagamento foi confirmado ou tem Pro
+      if (!isPro) {
+        // Recarregar dados do frete para verificar pagamento
+        const { data: freteAtualizado } = await supabase
+          .from('fretes')
+          .select('pagamento_confirmado')
+          .eq('id', freteData.id)
+          .single();
+
+        if (!freteAtualizado?.pagamento_confirmado) {
+          toast.error('Pagamento não confirmado. Complete o pagamento primeiro.');
+          setAceitando(false);
+          return;
+        }
+      }
+
+      // Obter IP do cliente
       let ipAddress = 'Não disponível';
       try {
         const ipResponse = await fetch('https://api.ipify.org?format=json');
@@ -142,6 +188,8 @@ export default function ContratoFrete() {
         console.log('Não foi possível obter o IP');
       }
 
+      const tipoMonetizacao = isPro ? 'assinatura' : 'comissao';
+
       if (contrato) {
         // Atualizar contrato existente
         const { error } = await supabase
@@ -150,7 +198,8 @@ export default function ContratoFrete() {
             status: 'aceito',
             aceito_por_user_id: userId,
             aceito_em: new Date().toISOString(),
-            ip_aceite: ipAddress
+            ip_aceite: ipAddress,
+            tipo_monetizacao: tipoMonetizacao
           })
           .eq('id', contrato.id);
 
@@ -174,19 +223,23 @@ export default function ContratoFrete() {
             status: 'aceito',
             aceito_por_user_id: userId,
             aceito_em: new Date().toISOString(),
-            ip_aceite: ipAddress
+            ip_aceite: ipAddress,
+            tipo_monetizacao: tipoMonetizacao
           });
 
         if (error) throw error;
       }
 
-      // Atualizar frete para indicar contrato aceito
+      // Atualizar frete para indicar contrato aceito e mudar status
       await supabase
         .from('fretes')
-        .update({ contrato_aceito: true })
+        .update({ 
+          contrato_aceito: true,
+          status: 'aceito'
+        })
         .eq('id', freteData.id);
 
-      toast.success('Contrato aceito com sucesso!');
+      toast.success('✅ Contrato aceito com sucesso! Dados do produtor liberados.');
       fetchContrato();
     } catch (error: any) {
       toast.error(error.message || 'Erro ao aceitar contrato');
@@ -212,6 +265,7 @@ export default function ContratoFrete() {
   }
 
   const contratoAceito = contrato?.status === 'aceito';
+  const valorFrete = freteData.valor_contraproposta || freteData.valor_frete || 0;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
@@ -255,7 +309,7 @@ export default function ContratoFrete() {
                 <span className="text-muted-foreground">Valor:</span>
                 <p className="font-medium">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-                    .format(freteData.valor_contraproposta || freteData.valor_frete || 0)}
+                    .format(valorFrete)}
                 </p>
               </div>
               <div>
@@ -269,6 +323,30 @@ export default function ContratoFrete() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Aviso de monetização para transportador */}
+        {!contratoAceito && userRole === 'transportador' && (
+          <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-blue-800 dark:text-blue-200">
+                    {temPlanoProAtivo 
+                      ? '✨ Você tem Plano PRO ativo! Comissão 0%'
+                      : 'Taxa de 8% sobre o valor do frete'}
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    {temPlanoProAtivo 
+                      ? 'Seu aceite será processado automaticamente sem cobrança adicional.'
+                      : `Valor da comissão: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorFrete * 0.08)}`
+                    }
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Texto do Contrato */}
         <Card>
@@ -305,6 +383,19 @@ export default function ContratoFrete() {
                 <p>Data do aceite: {contrato.aceito_em && format(new Date(contrato.aceito_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
                 <p>IP registrado: {contrato.ip_aceite || 'Não registrado'}</p>
                 <p>Versão do contrato: {contrato.versao_contrato}</p>
+                <p>Tipo de monetização: {contrato.tipo_monetizacao === 'assinatura' ? 'Plano PRO (0%)' : 'Comissão (8%)'}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Status do Pagamento */}
+        {contratoAceito && freteData.pagamento_confirmado && (
+          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-semibold">Pagamento Confirmado - Dados liberados</span>
               </div>
             </CardContent>
           </Card>
@@ -322,17 +413,18 @@ export default function ContratoFrete() {
                 />
                 <label htmlFor="concordo" className="text-sm cursor-pointer">
                   Li e concordo com todos os termos e condições do contrato acima.
-                  Declaro estar ciente de minhas responsabilidades como transportador.
+                  Declaro estar ciente de minhas responsabilidades como transportador
+                  {!temPlanoProAtivo && ' e da taxa de 8% sobre o valor do frete'}.
                 </label>
               </div>
               
               <div className="flex gap-3">
                 <Button
-                  onClick={handleAceitarContrato}
+                  onClick={handleIniciarAceite}
                   disabled={!concordo || aceitando}
                   className="flex-1"
                 >
-                  {aceitando ? 'Processando...' : 'Aceitar Contrato e Frete'}
+                  {aceitando ? 'Processando...' : temPlanoProAtivo ? 'Aceitar Contrato (PRO)' : 'Aceitar e Pagar'}
                 </Button>
                 <Button variant="outline" onClick={() => navigate(-1)}>
                   Cancelar
@@ -368,6 +460,21 @@ export default function ContratoFrete() {
           />
         )}
       </div>
+
+      {/* Modal de Pagamento */}
+      {freteData && freteId && (
+        <PagamentoModal
+          open={showPagamentoModal}
+          onOpenChange={setShowPagamentoModal}
+          freteId={freteId}
+          fretePublicId={fretePublicId || ''}
+          transportadorId={freteData.transportadores.id}
+          valorFrete={valorFrete}
+          origem={freteData.origem || ''}
+          destino={freteData.destino || ''}
+          onPagamentoConfirmado={handlePagamentoConfirmado}
+        />
+      )}
     </div>
   );
 }
