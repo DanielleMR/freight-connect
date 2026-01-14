@@ -599,6 +599,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      atribuir_role_usuario: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      atualizar_documento_usuario: {
+        Args: {
+          p_arquivo_nome: string
+          p_arquivo_url: string
+          p_documento_id: string
+        }
+        Returns: boolean
+      }
+      atualizar_frete_produtor: {
+        Args: {
+          p_data_prevista?: string
+          p_descricao?: string
+          p_frete_id: string
+          p_observacoes_valor?: string
+          p_quantidade_animais?: number
+        }
+        Returns: boolean
+      }
       calcular_comissao_frete: {
         Args: { p_transportador_id: string; p_valor_frete: number }
         Returns: {
