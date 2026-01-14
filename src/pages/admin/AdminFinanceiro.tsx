@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { DollarSign, TrendingUp, Users, CreditCard, Search, Filter, Crown, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, CreditCard, Search, Filter, Crown, CheckCircle, Clock, AlertCircle, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { exportToCSV, formatters } from '@/lib/csv-export';
 
 interface Pagamento {
   id: string;
@@ -43,6 +45,10 @@ export default function AdminFinanceiro() {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [busca, setBusca] = useState('');
   const [transportadoresPro, setTransportadoresPro] = useState(0);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     fetchPagamentos();
@@ -108,19 +114,33 @@ export default function AdminFinanceiro() {
     return <Badge variant="secondary"><CreditCard className="h-3 w-3 mr-1" /> Comissão</Badge>;
   };
 
-  const pagamentosFiltrados = pagamentos.filter(p => {
-    if (filtroTipo !== 'todos' && p.tipo !== filtroTipo) return false;
-    if (filtroStatus !== 'todos' && p.status !== filtroStatus) return false;
-    if (busca) {
-      const termo = busca.toLowerCase();
-      return (
-        p.transportador?.nome.toLowerCase().includes(termo) ||
-        p.transportador?.public_id.toLowerCase().includes(termo) ||
-        p.frete?.public_id.toLowerCase().includes(termo)
-      );
-    }
-    return true;
-  });
+  const pagamentosFiltrados = useMemo(() => {
+    return pagamentos.filter(p => {
+      if (filtroTipo !== 'todos' && p.tipo !== filtroTipo) return false;
+      if (filtroStatus !== 'todos' && p.status !== filtroStatus) return false;
+      if (busca) {
+        const termo = busca.toLowerCase();
+        return (
+          p.transportador?.nome.toLowerCase().includes(termo) ||
+          p.transportador?.public_id.toLowerCase().includes(termo) ||
+          p.frete?.public_id.toLowerCase().includes(termo)
+        );
+      }
+      return true;
+    });
+  }, [pagamentos, filtroTipo, filtroStatus, busca]);
+
+  // Paginated data
+  const totalPages = Math.ceil(pagamentosFiltrados.length / itemsPerPage);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return pagamentosFiltrados.slice(start, start + itemsPerPage);
+  }, [pagamentosFiltrados, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filtroTipo, filtroStatus, busca]);
 
   const totalRecebido = pagamentos
     .filter(p => p.status === 'pago')
@@ -138,12 +158,35 @@ export default function AdminFinanceiro() {
     .filter(p => p.tipo === 'assinatura' && p.status === 'pago')
     .reduce((acc, p) => acc + p.valor_total, 0);
 
+  const handleExportCSV = () => {
+    exportToCSV(pagamentosFiltrados, [
+      { header: 'Data', accessor: (row) => formatters.datetime(row.created_at) },
+      { header: 'Transportador', accessor: (row) => row.transportador?.nome || '' },
+      { header: 'ID Transportador', accessor: (row) => row.transportador?.public_id || '' },
+      { header: 'Tipo', accessor: 'tipo' },
+      { header: 'ID Frete', accessor: (row) => row.frete?.public_id || '' },
+      { header: 'Origem', accessor: (row) => row.frete?.origem || '' },
+      { header: 'Destino', accessor: (row) => row.frete?.destino || '' },
+      { header: 'Valor Base', accessor: (row) => formatters.currency(row.valor_base) },
+      { header: 'Percentual Comissão', accessor: (row) => row.percentual_comissao?.toString() || '' },
+      { header: 'Valor Total', accessor: (row) => formatters.currency(row.valor_total) },
+      { header: 'Status', accessor: 'status' },
+      { header: 'Pago Em', accessor: (row) => formatters.datetime(row.pago_em) },
+    ], 'financeiro');
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Financeiro</h1>
-          <p className="text-muted-foreground">Gestão de pagamentos e monetização</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Financeiro</h1>
+            <p className="text-muted-foreground">Gestão de pagamentos e monetização</p>
+          </div>
+          <Button onClick={handleExportCSV} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
         </div>
 
         {/* Cards de Resumo */}
@@ -239,65 +282,76 @@ export default function AdminFinanceiro() {
             ) : pagamentosFiltrados.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">Nenhum pagamento encontrado.</p>
             ) : (
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Transportador</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Frete</TableHead>
-                      <TableHead className="text-right">Valor Base</TableHead>
-                      <TableHead className="text-right">Comissão</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pagamentosFiltrados.map((pagamento) => (
-                      <TableRow key={pagamento.id}>
-                        <TableCell className="whitespace-nowrap">
-                          {formatDate(pagamento.created_at)}
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{pagamento.transportador?.nome}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {pagamento.transportador?.public_id}
-                              {pagamento.transportador?.plano_tipo === 'pro' && (
-                                <Badge className="ml-2 bg-yellow-500 text-xs">PRO</Badge>
-                              )}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getTipoBadge(pagamento.tipo)}</TableCell>
-                        <TableCell>
-                          {pagamento.frete ? (
+              <>
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Transportador</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Frete</TableHead>
+                        <TableHead className="text-right">Valor Base</TableHead>
+                        <TableHead className="text-right">Comissão</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedData.map((pagamento) => (
+                        <TableRow key={pagamento.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDate(pagamento.created_at)}
+                          </TableCell>
+                          <TableCell>
                             <div>
-                              <p className="font-mono text-sm">{pagamento.frete.public_id}</p>
+                              <p className="font-medium">{pagamento.transportador?.nome}</p>
                               <p className="text-xs text-muted-foreground">
-                                {pagamento.frete.origem} → {pagamento.frete.destino}
+                                {pagamento.transportador?.public_id}
+                                {pagamento.transportador?.plano_tipo === 'pro' && (
+                                  <Badge className="ml-2 bg-yellow-500 text-xs">PRO</Badge>
+                                )}
                               </p>
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {pagamento.valor_base ? formatCurrency(pagamento.valor_base) : '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {pagamento.percentual_comissao ? `${pagamento.percentual_comissao}%` : '-'}
-                        </TableCell>
-                        <TableCell className="text-right font-bold">
-                          {formatCurrency(pagamento.valor_total)}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(pagamento.status)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                          </TableCell>
+                          <TableCell>{getTipoBadge(pagamento.tipo)}</TableCell>
+                          <TableCell>
+                            {pagamento.frete ? (
+                              <div>
+                                <p className="font-mono text-sm">{pagamento.frete.public_id}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {pagamento.frete.origem} → {pagamento.frete.destino}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {pagamento.valor_base ? formatCurrency(pagamento.valor_base) : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {pagamento.percentual_comissao ? `${pagamento.percentual_comissao}%` : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-bold">
+                            {formatCurrency(pagamento.valor_total)}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(pagamento.status)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <AdminPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={pagamentosFiltrados.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
+              </>
             )}
           </CardContent>
         </Card>
