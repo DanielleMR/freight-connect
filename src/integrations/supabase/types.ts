@@ -507,6 +507,30 @@ export type Database = {
         }
         Relationships: []
       }
+      templates_juridicos: {
+        Row: {
+          ativo: boolean | null
+          conteudo: string
+          id: string
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          conteudo: string
+          id?: string
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          conteudo?: string
+          id?: string
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       transportadores: {
         Row: {
           ativo: boolean
