@@ -220,6 +220,24 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          ativo: boolean
+          chave: string
+          descricao: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          descricao?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          descricao?: string | null
+        }
+        Relationships: []
+      }
       fretes: {
         Row: {
           contrato_aceito: boolean | null
