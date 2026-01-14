@@ -20,6 +20,7 @@ import AdminContratos from "./pages/admin/AdminContratos";
 import AdminDocumentos from "./pages/admin/AdminDocumentos";
 import AdminChats from "./pages/admin/AdminChats";
 import AdminFinanceiro from "./pages/admin/AdminFinanceiro";
+import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
@@ -27,6 +28,7 @@ import TransportadorPainel from "./pages/transportador/TransportadorPainel";
 import TransportadorFinanceiro from "./pages/transportador/TransportadorFinanceiro";
 import MapaTransportadores from "./pages/mapa/MapaTransportadores";
 import ContratoFrete from "./pages/contrato/ContratoFrete";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -54,12 +56,14 @@ const App = () => (
             <Route path="/admin/chats" element={<AdminChats />} />
             <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
             <Route path="/admin/auditoria" element={<AdminAuditoria />} />
+            <Route path="/admin/configuracoes" element={<AdminConfiguracoes />} />
             <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
             <Route path="/produtor/painel" element={<ProdutorPainel />} />
             <Route path="/transportador/cadastro" element={<TransportadorCadastro />} />
             <Route path="/transportador/painel" element={<TransportadorPainel />} />
             <Route path="/transportador/financeiro" element={<TransportadorFinanceiro />} />
             <Route path="/mapa/transportadores" element={<MapaTransportadores />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

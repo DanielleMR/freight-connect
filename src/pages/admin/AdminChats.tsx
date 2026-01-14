@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { MessageCircle, Eye, AlertTriangle, Filter } from 'lucide-react';
+import { MessageCircle, Eye, AlertTriangle, Filter, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { exportToCSV, formatters } from '@/lib/csv-export';
 
 interface Message {
   id: string;
@@ -42,6 +44,10 @@ const AdminChats = () => {
   const [viewChat, setViewChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [filterBloqueadas, setFilterBloqueadas] = useState<string>('all');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     fetchChats();
@@ -49,7 +55,6 @@ const AdminChats = () => {
 
   const fetchChats = async () => {
     try {
-      // Buscar todas as mensagens agrupadas por frete
       const { data: mensagens, error } = await supabase
         .from('mensagens_chat')
         .select('*')
@@ -57,7 +62,6 @@ const AdminChats = () => {
 
       if (error) throw error;
 
-      // Buscar fretes para obter public_id
       const freteIds = [...new Set((mensagens || []).map(m => m.frete_id))];
       
       const { data: fretes } = await supabase
@@ -65,7 +69,6 @@ const AdminChats = () => {
         .select('id, public_id, origem, destino')
         .in('id', freteIds);
 
-      // Agrupar por frete
       const chatMap = new Map<string, FreteChat>();
       
       (mensagens || []).forEach(msg => {
@@ -135,11 +138,35 @@ const AdminChats = () => {
     }
   };
 
-  const filteredChats = filterBloqueadas === 'blocked' 
-    ? chats.filter(c => c.blocked_messages > 0)
-    : chats;
+  const filteredChats = useMemo(() => {
+    return filterBloqueadas === 'blocked' 
+      ? chats.filter(c => c.blocked_messages > 0)
+      : chats;
+  }, [chats, filterBloqueadas]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredChats.length / itemsPerPage);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredChats.slice(start, start + itemsPerPage);
+  }, [filteredChats, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterBloqueadas]);
 
   const totalBloqueadas = chats.reduce((acc, c) => acc + c.blocked_messages, 0);
+
+  const handleExportCSV = () => {
+    exportToCSV(filteredChats, [
+      { header: 'ID Frete', accessor: 'frete_public_id' },
+      { header: 'Origem', accessor: (row) => row.origem || '' },
+      { header: 'Destino', accessor: (row) => row.destino || '' },
+      { header: 'Total Mensagens', accessor: 'total_messages' },
+      { header: 'Mensagens Bloqueadas', accessor: 'blocked_messages' },
+      { header: 'Última Mensagem', accessor: (row) => formatters.datetime(row.last_message_at) },
+    ], 'chats');
+  };
 
   return (
     <AdminLayout>
@@ -164,6 +191,10 @@ const AdminChats = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              <Button onClick={handleExportCSV} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" />
+                CSV
+              </Button>
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={filterBloqueadas} onValueChange={setFilterBloqueadas}>
                 <SelectTrigger className="w-40">
@@ -186,60 +217,71 @@ const AdminChats = () => {
               Nenhuma conversa encontrada.
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Frete</TableHead>
-                    <TableHead>Rota</TableHead>
-                    <TableHead>Total Mensagens</TableHead>
-                    <TableHead>Bloqueadas</TableHead>
-                    <TableHead>Última Mensagem</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredChats.map((chat) => (
-                    <TableRow key={chat.frete_id} className={chat.blocked_messages > 0 ? 'bg-amber-50 dark:bg-amber-900/10' : ''}>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono">
-                          {chat.frete_public_id}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {chat.origem} → {chat.destino}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{chat.total_messages}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {chat.blocked_messages > 0 ? (
-                          <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                            <AlertTriangle className="h-3 w-3" />
-                            {chat.blocked_messages}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">0</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {format(new Date(chat.last_message_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openChat(chat.frete_id)}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Ver Chat
-                        </Button>
-                      </TableCell>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Frete</TableHead>
+                      <TableHead>Rota</TableHead>
+                      <TableHead>Total Mensagens</TableHead>
+                      <TableHead>Bloqueadas</TableHead>
+                      <TableHead>Última Mensagem</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedData.map((chat) => (
+                      <TableRow key={chat.frete_id} className={chat.blocked_messages > 0 ? 'bg-amber-50 dark:bg-amber-900/10' : ''}>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono">
+                            {chat.frete_public_id}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {chat.origem} → {chat.destino}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{chat.total_messages}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {chat.blocked_messages > 0 ? (
+                            <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                              <AlertTriangle className="h-3 w-3" />
+                              {chat.blocked_messages}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">0</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(new Date(chat.last_message_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openChat(chat.frete_id)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Ver Chat
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <AdminPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredChats.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

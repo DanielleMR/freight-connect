@@ -149,6 +149,17 @@ export default function Auth() {
                     minLength={6}
                   />
                 </div>
+                <div className="flex justify-end">
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    size="sm" 
+                    className="text-xs px-0"
+                    onClick={() => navigate('/reset-password')}
+                  >
+                    Esqueci minha senha
+                  </Button>
+                </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Entrando...' : 'Entrar'}
                 </Button>
