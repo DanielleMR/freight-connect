@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminPagination } from "@/components/admin/AdminPagination";
+import { Download } from "lucide-react";
+import { exportToCSV } from "@/lib/csv-export";
 
 interface Transportador {
   id: string;
@@ -27,6 +30,8 @@ const AdminTransportadores = () => {
   const [transportadores, setTransportadores] = useState<Transportador[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -116,69 +121,115 @@ const AdminTransportadores = () => {
     }
   };
 
+  const paginatedTransportadores = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return transportadores.slice(start, start + itemsPerPage);
+  }, [transportadores, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(transportadores.length / itemsPerPage);
+
+  const handleExportCSV = () => {
+    const data = transportadores.map(t => ({
+      Nome: t.nome,
+      Telefone: t.telefone,
+      Placa: t.placa_veiculo || '-',
+      Capacidade: t.capacidade_animais || '-',
+      Região: t.regiao_atendimento || '-',
+      Status: t.ativo ? 'Ativo' : 'Inativo',
+      'Cadastrado em': t.created_at ? new Date(t.created_at).toLocaleDateString('pt-BR') : '-'
+    }));
+    exportToCSV(data, `transportadores_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Transportadores</h2>
-          <Button onClick={() => navigate("/admin/transportadores/novo")}>
-            Cadastrar Transportador
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+            <Button onClick={() => navigate("/admin/transportadores/novo")}>
+              Cadastrar Transportador
+            </Button>
+          </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Transportadores</CardTitle>
+            <CardTitle>Transportadores ({transportadores.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <p>Carregando...</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>Placa</TableHead>
-                    <TableHead>Capacidade</TableHead>
-                    <TableHead>Região</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transportadores.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell>{t.nome}</TableCell>
-                      <TableCell>{t.telefone}</TableCell>
-                      <TableCell>{t.placa_veiculo || "-"}</TableCell>
-                      <TableCell>{t.capacidade_animais || "-"}</TableCell>
-                      <TableCell>{t.regiao_atendimento || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant={t.ativo ? "default" : "secondary"}>
-                          {t.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditModal(t)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggle(t.id)}
-                        >
-                          {t.ativo ? "Desativar" : "Ativar"}
-                        </Button>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>Placa</TableHead>
+                      <TableHead>Capacidade</TableHead>
+                      <TableHead>Região</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedTransportadores.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell>{t.nome}</TableCell>
+                        <TableCell>{t.telefone}</TableCell>
+                        <TableCell>{t.placa_veiculo || "-"}</TableCell>
+                        <TableCell>{t.capacidade_animais || "-"}</TableCell>
+                        <TableCell>{t.regiao_atendimento || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant={t.ativo ? "default" : "secondary"}>
+                            {t.ativo ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditModal(t)}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggle(t.id)}
+                          >
+                            {t.ativo ? "Desativar" : "Ativar"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                <AdminPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={transportadores.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={handlePageChange}
+                  onItemsPerPageChange={handleItemsPerPageChange}
+                />
+              </>
             )}
           </CardContent>
         </Card>
