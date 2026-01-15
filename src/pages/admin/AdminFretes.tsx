@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { FreteTimeline } from "@/components/frete/FreteTimeline";
-import { Send, Edit, DollarSign, Calendar, Ruler, Eye } from "lucide-react";
+import { Send, Edit, DollarSign, Calendar, Ruler, Eye, Download } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { exportToCSV } from "@/lib/csv-export";
 
 type FreteStatus = Database['public']['Enums']['frete_status'];
 
@@ -51,6 +53,8 @@ const AdminFretes = () => {
   const [selectedFrete, setSelectedFrete] = useState<string | null>(null);
   const [selectedTransportador, setSelectedTransportador] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Edit dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -191,11 +195,47 @@ const AdminFretes = () => {
     return { label: 'Proposto', color: 'text-amber-600 bg-amber-100' };
   };
 
+  const paginatedFretes = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return fretes.slice(start, start + itemsPerPage);
+  }, [fretes, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(fretes.length / itemsPerPage);
+
+  const handleExportCSV = () => {
+    const data = fretes.map(f => ({
+      Origem: f.origem || '-',
+      Destino: f.destino || '-',
+      'Tipo Animal': f.tipo_animal || '-',
+      'Qtd Animais': f.quantidade_animais || '-',
+      Valor: f.valor_frete ? formatCurrency(f.valor_frete) : '-',
+      Contraproposta: f.valor_contraproposta ? formatCurrency(f.valor_contraproposta) : '-',
+      Status: f.status,
+      Transportador: f.transportador?.nome || '-',
+      'Data Prevista': formatDate(f.data_prevista),
+      'Criado em': formatDate(f.created_at)
+    }));
+    exportToCSV(data, `fretes_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+  };
+
   return (
     <AdminLayout>
       <Card>
-        <CardHeader>
-          <CardTitle>Todos os Fretes</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Todos os Fretes ({fretes.length})</CardTitle>
+          <Button variant="outline" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -203,126 +243,137 @@ const AdminFretes = () => {
           ) : fretes.length === 0 ? (
             <p className="text-muted-foreground">Nenhum frete encontrado.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Rota</TableHead>
-                    <TableHead>Tipo Animal</TableHead>
-                    <TableHead>Animais</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Contraproposta</TableHead>
-                    <TableHead>Status Financeiro</TableHead>
-                    <TableHead>Transportador</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data Prevista</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fretes.map((f) => {
-                    const statusFinanceiro = getStatusFinanceiro(f);
-                    return (
-                    <TableRow key={f.id}>
-                      <TableCell className="font-medium">
-                        {f.origem || "-"} → {f.destino || "-"}
-                      </TableCell>
-                      <TableCell className="capitalize">{f.tipo_animal || "-"}</TableCell>
-                      <TableCell>{f.quantidade_animais || "-"}</TableCell>
-                      <TableCell className="font-medium text-green-600">
-                        {formatCurrency(f.valor_frete)}
-                      </TableCell>
-                      <TableCell>
-                        {f.valor_contraproposta ? (
-                          <span className="font-medium text-blue-600">
-                            {formatCurrency(f.valor_contraproposta)}
-                          </span>
-                        ) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusFinanceiro.color}`}>
-                          {statusFinanceiro.label}
-                        </span>
-                      </TableCell>
-                      <TableCell>{f.transportador?.nome || "-"}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={f.status} />
-                      </TableCell>
-                      <TableCell>{formatDate(f.data_prevista)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleOpenView(f)}
-                            title="Ver detalhes"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleOpenEdit(f)}
-                            title="Editar"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          
-                          <Dialog open={dialogOpen && selectedFrete === f.id} onOpenChange={(open) => {
-                            setDialogOpen(open);
-                            if (!open) {
-                              setSelectedFrete(null);
-                              setSelectedTransportador("");
-                            }
-                          }}>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setSelectedFrete(f.id)}
-                              >
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Ofertar Frete a Transportador</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4 pt-4">
-                                <div className="text-sm space-y-1">
-                                  <p><strong>Origem:</strong> {f.origem || "-"}</p>
-                                  <p><strong>Destino:</strong> {f.destino || "-"}</p>
-                                  <p><strong>Animais:</strong> {f.quantidade_animais || "-"}</p>
-                                  <p><strong>Valor:</strong> {formatCurrency(f.valor_frete)}</p>
-                                </div>
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">Selecionar Transportador</label>
-                                  <Select value={selectedTransportador} onValueChange={setSelectedTransportador}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Escolha um transportador ativo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {transportadores.map((t) => (
-                                        <SelectItem key={t.id} value={t.id}>
-                                          {t.nome}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <Button onClick={handleOfertarFrete} className="w-full">
-                                  Confirmar Oferta
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </TableCell>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rota</TableHead>
+                      <TableHead>Tipo Animal</TableHead>
+                      <TableHead>Animais</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Contraproposta</TableHead>
+                      <TableHead>Status Financeiro</TableHead>
+                      <TableHead>Transportador</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Data Prevista</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
-                  )})}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedFretes.map((f) => {
+                      const statusFinanceiro = getStatusFinanceiro(f);
+                      return (
+                      <TableRow key={f.id}>
+                        <TableCell className="font-medium">
+                          {f.origem || "-"} → {f.destino || "-"}
+                        </TableCell>
+                        <TableCell className="capitalize">{f.tipo_animal || "-"}</TableCell>
+                        <TableCell>{f.quantidade_animais || "-"}</TableCell>
+                        <TableCell className="font-medium text-green-600">
+                          {formatCurrency(f.valor_frete)}
+                        </TableCell>
+                        <TableCell>
+                          {f.valor_contraproposta ? (
+                            <span className="font-medium text-blue-600">
+                              {formatCurrency(f.valor_contraproposta)}
+                            </span>
+                          ) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusFinanceiro.color}`}>
+                            {statusFinanceiro.label}
+                          </span>
+                        </TableCell>
+                        <TableCell>{f.transportador?.nome || "-"}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={f.status} />
+                        </TableCell>
+                        <TableCell>{formatDate(f.data_prevista)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleOpenView(f)}
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleOpenEdit(f)}
+                              title="Editar"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            
+                            <Dialog open={dialogOpen && selectedFrete === f.id} onOpenChange={(open) => {
+                              setDialogOpen(open);
+                              if (!open) {
+                                setSelectedFrete(null);
+                                setSelectedTransportador("");
+                              }
+                            }}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setSelectedFrete(f.id)}
+                                >
+                                  <Send className="h-3 w-3" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Ofertar Frete a Transportador</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 pt-4">
+                                  <div className="text-sm space-y-1">
+                                    <p><strong>Origem:</strong> {f.origem || "-"}</p>
+                                    <p><strong>Destino:</strong> {f.destino || "-"}</p>
+                                    <p><strong>Animais:</strong> {f.quantidade_animais || "-"}</p>
+                                    <p><strong>Valor:</strong> {formatCurrency(f.valor_frete)}</p>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium">Selecionar Transportador</label>
+                                    <Select value={selectedTransportador} onValueChange={setSelectedTransportador}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Escolha um transportador ativo" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {transportadores.map((t) => (
+                                          <SelectItem key={t.id} value={t.id}>
+                                            {t.nome}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <Button onClick={handleOfertarFrete} className="w-full">
+                                    Confirmar Oferta
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )})}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <AdminPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={fretes.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onItemsPerPageChange={handleItemsPerPageChange}
+              />
+            </>
           )}
         </CardContent>
       </Card>

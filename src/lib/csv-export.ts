@@ -7,41 +7,66 @@ interface ExportColumn<T> {
   accessor: keyof T | ((row: T) => string | number | null | undefined);
 }
 
+/**
+ * Exporta dados para CSV
+ * @param data - Array de objetos com os dados
+ * @param columnsOrFilename - Colunas de exportação OU nome do arquivo (para formato simples)
+ * @param filename - Nome do arquivo (opcional se columnsOrFilename for string)
+ */
 export function exportToCSV<T extends Record<string, any>>(
   data: T[],
-  columns: ExportColumn<T>[],
-  filename: string
+  columnsOrFilename: ExportColumn<T>[] | string,
+  filename?: string
 ): void {
   if (data.length === 0) {
     alert('Nenhum dado para exportar');
     return;
   }
 
-  // Gerar cabeçalho
-  const headers = columns.map(col => `"${col.header}"`).join(';');
+  let headers: string;
+  let rows: string[];
 
-  // Gerar linhas
-  const rows = data.map(row => {
-    return columns.map(col => {
-      let value: string | number | null | undefined;
-      
-      if (typeof col.accessor === 'function') {
-        value = col.accessor(row);
-      } else {
-        value = row[col.accessor];
-      }
+  // Formato simples: data é um array de objetos chave-valor
+  if (typeof columnsOrFilename === 'string') {
+    const keys = Object.keys(data[0]);
+    headers = keys.map(key => `"${key}"`).join(';');
+    rows = data.map(row => {
+      return keys.map(key => {
+        const value = row[key];
+        if (value === null || value === undefined || value === '-') {
+          return '""';
+        }
+        if (typeof value === 'number') {
+          return value.toString().replace('.', ',');
+        }
+        return `"${String(value).replace(/"/g, '""')}"`;
+      }).join(';');
+    });
+    filename = columnsOrFilename;
+  } else {
+    // Formato com colunas explícitas
+    const columns = columnsOrFilename;
+    headers = columns.map(col => `"${col.header}"`).join(';');
+    rows = data.map(row => {
+      return columns.map(col => {
+        let value: string | number | null | undefined;
+        
+        if (typeof col.accessor === 'function') {
+          value = col.accessor(row);
+        } else {
+          value = row[col.accessor];
+        }
 
-      // Formatar valor
-      if (value === null || value === undefined) {
-        return '""';
-      }
-      if (typeof value === 'number') {
-        return value.toString().replace('.', ',');
-      }
-      // Escapar aspas e envolver em aspas
-      return `"${String(value).replace(/"/g, '""')}"`;
-    }).join(';');
-  });
+        if (value === null || value === undefined) {
+          return '""';
+        }
+        if (typeof value === 'number') {
+          return value.toString().replace('.', ',');
+        }
+        return `"${String(value).replace(/"/g, '""')}"`;
+      }).join(';');
+    });
+  }
 
   // Criar conteúdo CSV com BOM para Excel
   const BOM = '\uFEFF';
@@ -53,7 +78,7 @@ export function exportToCSV<T extends Record<string, any>>(
   
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+  link.download = `${filename}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
