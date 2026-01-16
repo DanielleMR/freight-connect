@@ -90,6 +90,20 @@ export type Database = {
             foreignKeyName: "avaliacoes_transportador_id_fkey"
             columns: ["transportador_id"]
             isOneToOne: false
+            referencedRelation: "transportador_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_listagem"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
             referencedRelation: "transportadores"
             referencedColumns: ["id"]
           },
@@ -163,7 +177,28 @@ export type Database = {
             foreignKeyName: "contratos_produtor_id_fkey"
             columns: ["produtor_id"]
             isOneToOne: false
+            referencedRelation: "produtor_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_produtor_id_fkey"
+            columns: ["produtor_id"]
+            isOneToOne: false
             referencedRelation: "produtores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_listagem"
             referencedColumns: ["id"]
           },
           {
@@ -310,7 +345,28 @@ export type Database = {
             foreignKeyName: "fretes_produtor_id_fkey"
             columns: ["produtor_id"]
             isOneToOne: false
+            referencedRelation: "produtor_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fretes_produtor_id_fkey"
+            columns: ["produtor_id"]
+            isOneToOne: false
             referencedRelation: "produtores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fretes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fretes_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_listagem"
             referencedColumns: ["id"]
           },
           {
@@ -457,6 +513,20 @@ export type Database = {
             columns: ["frete_id"]
             isOneToOne: false
             referencedRelation: "fretes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_listagem"
             referencedColumns: ["id"]
           },
           {
@@ -638,7 +708,105 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      produtor_contato_seguro: {
+        Row: {
+          cidade: string | null
+          estado: string | null
+          id: string | null
+          nome: string | null
+          public_id: string | null
+          telefone: string | null
+        }
+        Insert: {
+          cidade?: string | null
+          estado?: string | null
+          id?: string | null
+          nome?: string | null
+          public_id?: string | null
+          telefone?: never
+        }
+        Update: {
+          cidade?: string | null
+          estado?: string | null
+          id?: string | null
+          nome?: string | null
+          public_id?: string | null
+          telefone?: never
+        }
+        Relationships: []
+      }
+      transportador_contato_seguro: {
+        Row: {
+          id: string | null
+          nome: string | null
+          public_id: string | null
+          telefone: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          id?: string | null
+          nome?: string | null
+          public_id?: string | null
+          telefone?: never
+          whatsapp?: never
+        }
+        Update: {
+          id?: string | null
+          nome?: string | null
+          public_id?: string | null
+          telefone?: never
+          whatsapp?: never
+        }
+        Relationships: []
+      }
+      transportador_listagem: {
+        Row: {
+          ativo: boolean | null
+          capacidade_animais: number | null
+          created_at: string | null
+          destaque_mapa: boolean | null
+          id: string | null
+          latitude: number | null
+          longitude: number | null
+          nome: string | null
+          plano_tipo: Database["public"]["Enums"]["plano_tipo"] | null
+          public_id: string | null
+          regiao_atendimento: string | null
+          tipo_animal: string | null
+          tipo_caminhao: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          capacidade_animais?: number | null
+          created_at?: string | null
+          destaque_mapa?: boolean | null
+          id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nome?: string | null
+          plano_tipo?: Database["public"]["Enums"]["plano_tipo"] | null
+          public_id?: string | null
+          regiao_atendimento?: string | null
+          tipo_animal?: string | null
+          tipo_caminhao?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          capacidade_animais?: number | null
+          created_at?: string | null
+          destaque_mapa?: boolean | null
+          id?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          nome?: string | null
+          plano_tipo?: Database["public"]["Enums"]["plano_tipo"] | null
+          public_id?: string | null
+          regiao_atendimento?: string | null
+          tipo_animal?: string | null
+          tipo_caminhao?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       atribuir_role_usuario: {
