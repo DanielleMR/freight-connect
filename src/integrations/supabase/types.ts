@@ -170,6 +170,13 @@ export type Database = {
             foreignKeyName: "contratos_pagamento_id_fkey"
             columns: ["pagamento_id"]
             isOneToOne: false
+            referencedRelation: "pagamento_resumo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_pagamento_id_fkey"
+            columns: ["pagamento_id"]
+            isOneToOne: false
             referencedRelation: "pagamentos"
             referencedColumns: ["id"]
           },
@@ -708,6 +715,65 @@ export type Database = {
       }
     }
     Views: {
+      pagamento_resumo: {
+        Row: {
+          created_at: string | null
+          frete_id: string | null
+          id: string | null
+          pago_em: string | null
+          status: Database["public"]["Enums"]["pagamento_status"] | null
+          tipo: string | null
+          transportador_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          frete_id?: string | null
+          id?: string | null
+          pago_em?: string | null
+          status?: Database["public"]["Enums"]["pagamento_status"] | null
+          tipo?: string | null
+          transportador_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          frete_id?: string | null
+          id?: string | null
+          pago_em?: string | null
+          status?: Database["public"]["Enums"]["pagamento_status"] | null
+          tipo?: string | null
+          transportador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_frete_id_fkey"
+            columns: ["frete_id"]
+            isOneToOne: false
+            referencedRelation: "fretes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_listagem"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtor_contato_seguro: {
         Row: {
           cidade: string | null
