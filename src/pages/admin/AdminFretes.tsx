@@ -3,16 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { FreteTimeline } from "@/components/frete/FreteTimeline";
-import { Send, Edit, DollarSign, Calendar, Ruler, Eye, Download } from "lucide-react";
+import { Send, Edit, DollarSign, Calendar, Ruler, Eye, Download, XCircle, AlertTriangle, Filter } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { exportToCSV } from "@/lib/csv-export";
 
@@ -20,6 +21,7 @@ type FreteStatus = Database['public']['Enums']['frete_status'];
 
 interface Frete {
   id: string;
+  public_id: string;
   origem: string | null;
   destino: string | null;
   quantidade_animais: number | null;
@@ -31,6 +33,7 @@ interface Frete {
   valor_contraproposta: number | null;
   data_prevista: string | null;
   status: FreteStatus;
+  pagamento_confirmado: boolean;
   created_at: string;
   transportador_id: string;
   transportador: {
@@ -55,6 +58,7 @@ const AdminFretes = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   
   // Edit dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -67,6 +71,13 @@ const AdminFretes = () => {
   const [editStatus, setEditStatus] = useState<FreteStatus>("solicitado");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewFrete, setViewFrete] = useState<Frete | null>(null);
+
+  // Cancel dialog
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelFrete, setCancelFrete] = useState<Frete | null>(null);
+  const [cancelMotivo, setCancelMotivo] = useState("");
+  const [cancelStep, setCancelStep] = useState<1 | 2>(1);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchFretes();
@@ -143,6 +154,71 @@ const AdminFretes = () => {
     setViewDialogOpen(true);
   };
 
+  const handleOpenCancel = (frete: Frete) => {
+    setCancelFrete(frete);
+    setCancelMotivo("");
+    setCancelStep(1);
+    setCancelDialogOpen(true);
+  };
+
+  const canCancel = (frete: Frete): boolean => {
+    // Only allow cancellation for 'solicitado' or 'aceito' status
+    return frete.status === 'solicitado' || frete.status === 'aceito';
+  };
+
+  const handleCancelFrete = async () => {
+    if (!cancelFrete || !cancelMotivo.trim()) {
+      toast.error("Motivo do cancelamento é obrigatório");
+      return;
+    }
+
+    if (cancelStep === 1) {
+      setCancelStep(2);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Update frete status to 'recusado' (closest to cancelled)
+      const { error: updateError } = await supabase
+        .from("fretes")
+        .update({ 
+          status: 'recusado',
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", cancelFrete.id);
+
+      if (updateError) throw updateError;
+
+      // Register audit log
+      await supabase.rpc('inserir_auditoria_sistema', {
+        p_acao: 'cancelamento_admin_frete',
+        p_tabela: 'fretes',
+        p_registro_id: cancelFrete.id,
+        p_dados_anteriores: {
+          status: cancelFrete.status,
+          pagamento_confirmado: cancelFrete.pagamento_confirmado
+        },
+        p_dados_novos: {
+          status: 'recusado',
+          motivo_cancelamento: cancelMotivo,
+          cancelado_por: 'admin'
+        }
+      });
+
+      toast.success("Frete cancelado com sucesso!");
+      setCancelDialogOpen(false);
+      setCancelFrete(null);
+      setCancelMotivo("");
+      setCancelStep(1);
+      fetchFretes();
+    } catch (error: any) {
+      toast.error(`Erro ao cancelar frete: ${error.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!editFrete) return;
 
@@ -195,15 +271,26 @@ const AdminFretes = () => {
     return { label: 'Proposto', color: 'text-amber-600 bg-amber-100' };
   };
 
+  const fretesFiltrados = useMemo(() => {
+    if (filtroStatus === 'todos') return fretes;
+    return fretes.filter(f => f.status === filtroStatus);
+  }, [fretes, filtroStatus]);
+
   const paginatedFretes = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return fretes.slice(start, start + itemsPerPage);
-  }, [fretes, currentPage, itemsPerPage]);
+    return fretesFiltrados.slice(start, start + itemsPerPage);
+  }, [fretesFiltrados, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(fretes.length / itemsPerPage);
+  const totalPages = Math.ceil(fretesFiltrados.length / itemsPerPage);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filtroStatus]);
 
   const handleExportCSV = () => {
-    const data = fretes.map(f => ({
+    const data = fretesFiltrados.map(f => ({
+      ID: f.public_id || '-',
       Origem: f.origem || '-',
       Destino: f.destino || '-',
       'Tipo Animal': f.tipo_animal || '-',
@@ -231,16 +318,32 @@ const AdminFretes = () => {
     <AdminLayout>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Todos os Fretes ({fretes.length})</CardTitle>
-          <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
+          <CardTitle>Todos os Fretes ({fretesFiltrados.length})</CardTitle>
+          <div className="flex gap-2">
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                <SelectItem value="solicitado">Solicitado</SelectItem>
+                <SelectItem value="aceito">Aceito</SelectItem>
+                <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                <SelectItem value="concluido">Concluído</SelectItem>
+                <SelectItem value="recusado">Recusado</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={handleExportCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
             <p>Carregando...</p>
-          ) : fretes.length === 0 ? (
+          ) : fretesFiltrados.length === 0 ? (
             <p className="text-muted-foreground">Nenhum frete encontrado.</p>
           ) : (
             <>
@@ -248,11 +351,11 @@ const AdminFretes = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID</TableHead>
                       <TableHead>Rota</TableHead>
                       <TableHead>Tipo Animal</TableHead>
                       <TableHead>Animais</TableHead>
                       <TableHead>Valor</TableHead>
-                      <TableHead>Contraproposta</TableHead>
                       <TableHead>Status Financeiro</TableHead>
                       <TableHead>Transportador</TableHead>
                       <TableHead>Status</TableHead>
@@ -265,6 +368,7 @@ const AdminFretes = () => {
                       const statusFinanceiro = getStatusFinanceiro(f);
                       return (
                       <TableRow key={f.id}>
+                        <TableCell className="font-mono text-xs">{f.public_id}</TableCell>
                         <TableCell className="font-medium">
                           {f.origem || "-"} → {f.destino || "-"}
                         </TableCell>
@@ -272,13 +376,6 @@ const AdminFretes = () => {
                         <TableCell>{f.quantidade_animais || "-"}</TableCell>
                         <TableCell className="font-medium text-green-600">
                           {formatCurrency(f.valor_frete)}
-                        </TableCell>
-                        <TableCell>
-                          {f.valor_contraproposta ? (
-                            <span className="font-medium text-blue-600">
-                              {formatCurrency(f.valor_contraproposta)}
-                            </span>
-                          ) : "-"}
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusFinanceiro.color}`}>
@@ -308,6 +405,18 @@ const AdminFretes = () => {
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
+                            
+                            {canCancel(f) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenCancel(f)}
+                                title="Cancelar Frete"
+                                className="text-red-600 border-red-300 hover:bg-red-50"
+                              >
+                                <XCircle className="h-3 w-3" />
+                              </Button>
+                            )}
                             
                             <Dialog open={dialogOpen && selectedFrete === f.id} onOpenChange={(open) => {
                               setDialogOpen(open);
@@ -368,7 +477,7 @@ const AdminFretes = () => {
               <AdminPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                totalItems={fretes.length}
+                totalItems={fretesFiltrados.length}
                 itemsPerPage={itemsPerPage}
                 onPageChange={handlePageChange}
                 onItemsPerPageChange={handleItemsPerPageChange}
@@ -388,6 +497,8 @@ const AdminFretes = () => {
             <div className="space-y-4 pt-4">
               <FreteTimeline status={viewFrete.status} />
               <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-muted-foreground">ID:</span><p className="font-mono">{viewFrete.public_id}</p></div>
+                <div><span className="text-muted-foreground">Pagamento:</span><p className={viewFrete.pagamento_confirmado ? "text-green-600 font-medium" : "text-yellow-600"}>{viewFrete.pagamento_confirmado ? "Confirmado" : "Pendente"}</p></div>
                 <div><span className="text-muted-foreground">Origem:</span><p className="font-medium">{viewFrete.origem}</p></div>
                 <div><span className="text-muted-foreground">Destino:</span><p className="font-medium">{viewFrete.destino}</p></div>
                 <div><span className="text-muted-foreground">Valor:</span><p className="font-medium text-green-600">{formatCurrency(viewFrete.valor_frete)}</p></div>
@@ -456,6 +567,136 @@ const AdminFretes = () => {
             </div>
             <Button onClick={handleSaveEdit} className="w-full">Salvar Alterações</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Frete Dialog - 2 steps */}
+      <Dialog open={cancelDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setCancelDialogOpen(false);
+          setCancelFrete(null);
+          setCancelMotivo("");
+          setCancelStep(1);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {cancelStep === 1 ? (
+                <>
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  Cancelar Frete
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  Confirmar Cancelamento
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {cancelStep === 1
+                ? 'Informe o motivo do cancelamento. Esta ação requer confirmação.'
+                : 'Revise os dados e confirme o cancelamento.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {cancelFrete && (
+            <div className="space-y-4">
+              {/* Resumo do frete */}
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ID:</span>
+                  <span className="font-mono">{cancelFrete.public_id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Rota:</span>
+                  <span className="font-medium">{cancelFrete.origem} → {cancelFrete.destino}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status Atual:</span>
+                  <StatusBadge status={cancelFrete.status} />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Transportador:</span>
+                  <span className="font-medium">{cancelFrete.transportador?.nome || '-'}</span>
+                </div>
+                {cancelFrete.valor_frete && (
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="font-bold text-green-600">{formatCurrency(cancelFrete.valor_frete)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Warning for 'aceito' with payment */}
+              {cancelFrete.status === 'aceito' && cancelFrete.pagamento_confirmado && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex gap-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-red-800">⚠️ Pagamento já confirmado!</p>
+                      <p className="text-sm text-red-700 mt-1">
+                        Este frete possui pagamento confirmado. O cancelamento pode ter implicações financeiras e jurídicas.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {cancelStep === 1 ? (
+                <div className="space-y-2">
+                  <Label htmlFor="cancelMotivo">Motivo do Cancelamento *</Label>
+                  <Textarea
+                    id="cancelMotivo"
+                    placeholder="Ex: Solicitação do produtor, erro de cadastro, problema com transportador..."
+                    value={cancelMotivo}
+                    onChange={(e) => setCancelMotivo(e.target.value)}
+                    className="min-h-[100px]"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Este motivo será registrado na auditoria do sistema.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex gap-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-yellow-800">Confirme o cancelamento</p>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        Ao confirmar:
+                      </p>
+                      <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside">
+                        <li>O frete será marcado como "Recusado"</li>
+                        <li>O registro será auditado com o motivo informado</li>
+                        <li>Produtor e transportador serão afetados</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {cancelStep === 2 && (
+              <Button variant="outline" onClick={() => setCancelStep(1)} disabled={submitting}>
+                Voltar
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)} disabled={submitting}>
+              Não Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelFrete}
+              disabled={submitting || (cancelStep === 1 && !cancelMotivo.trim())}
+            >
+              {submitting ? 'Processando...' : cancelStep === 1 ? 'Continuar' : 'Confirmar Cancelamento'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AdminLayout>
