@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Tractor, Truck, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Tractor, Truck, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { getUserRolesByUserId, AppRole } from '@/hooks/useUserRole';
 
-type UserRole = 'admin' | 'produtor' | 'transportador';
+type UserType = 'produtor' | 'transportador';
 
 export default function Auth() {
+  const [searchParams] = useSearchParams();
+  const selectedType = searchParams.get('tipo') as UserType | null;
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [roleError, setRoleError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,35 +36,40 @@ export default function Auth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        // Validate role matches selected type
+        if (selectedType) {
+          const roles = await getUserRolesByUserId(session.user.id);
+          if (!roles.includes(selectedType as AppRole)) {
+            // User logged in but doesn't have the selected role
+            await supabase.auth.signOut();
+            const tipoNome = selectedType === 'produtor' ? 'Proprietário de Animais' : 'Caminhoneiro';
+            const tipoReal = roles.includes('produtor') ? 'Proprietário de Animais' : 'Caminhoneiro';
+            setRoleError(`Esta conta está cadastrada como ${tipoReal}. Por favor, selecione o perfil correto para entrar.`);
+            setLoading(false);
+            return;
+          }
+        }
         await redirectByRole(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, selectedType]);
 
   const redirectByRole = async (userId: string) => {
-    // Check user roles
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
+    const roles = await getUserRolesByUserId(userId);
 
-    if (roles && roles.length > 0) {
-      const roleList = roles.map(r => r.role as UserRole);
-      
-      if (roleList.includes('admin')) {
-        navigate('/admin/transportadores');
-        return;
-      }
-      if (roleList.includes('transportador')) {
-        navigate('/transportador/painel');
-        return;
-      }
-      if (roleList.includes('produtor')) {
-        navigate('/produtor/painel');
-        return;
-      }
+    if (roles.includes('admin')) {
+      navigate('/admin/transportadores');
+      return;
+    }
+    if (roles.includes('transportador')) {
+      navigate('/transportador/painel');
+      return;
+    }
+    if (roles.includes('produtor')) {
+      navigate('/produtor/painel');
+      return;
     }
     
     // No role found - redirect to home
@@ -69,6 +79,7 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setRoleError(null);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -78,6 +89,21 @@ export default function Auth() {
 
       if (error) throw error;
 
+      // Validate role if type was selected
+      if (selectedType && data.user) {
+        const roles = await getUserRolesByUserId(data.user.id);
+        
+        if (!roles.includes(selectedType as AppRole)) {
+          await supabase.auth.signOut();
+          const tipoReal = roles.includes('produtor') ? 'Proprietário de Animais' : 
+                         roles.includes('transportador') ? 'Caminhoneiro' : 
+                         roles.includes('admin') ? 'Administrador' : 'desconhecido';
+          setRoleError(`Esta conta está cadastrada como ${tipoReal}. Por favor, selecione o perfil correto para entrar.`);
+          setLoading(false);
+          return;
+        }
+      }
+
       toast.success('Login realizado com sucesso!');
       // Redirect will happen via onAuthStateChange
     } catch (error: any) {
@@ -86,146 +112,208 @@ export default function Auth() {
       } else {
         toast.error(error.message);
       }
-    } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoBack = () => {
+    navigate('/');
+  };
+
+  const handleChangeType = () => {
+    setRoleError(null);
+    navigate('/');
   };
 
   if (checkingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p>Verificando sessão...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verificando sessão...</p>
+        </div>
       </div>
     );
   }
 
+  // If no type selected, show type selection
+  if (!selectedType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-earth p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="text-center relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="absolute left-4 top-4"
+              onClick={handleGoBack}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
+            <CardTitle className="text-2xl pt-6">Como você deseja entrar?</CardTitle>
+            <CardDescription>
+              Selecione seu perfil para acessar sua conta
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="outline"
+              className="w-full h-auto py-5 flex items-center gap-4 justify-start hover:border-primary hover:bg-primary/5 transition-all"
+              onClick={() => navigate('/auth?tipo=transportador')}
+            >
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Truck className="h-7 w-7 text-primary" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-base">Sou Caminhoneiro</p>
+                <p className="text-sm text-muted-foreground">
+                  Transporto animais e quero receber fretes
+                </p>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full h-auto py-5 flex items-center gap-4 justify-start hover:border-secondary hover:bg-secondary/5 transition-all"
+              onClick={() => navigate('/auth?tipo=produtor')}
+            >
+              <div className="w-14 h-14 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
+                <Tractor className="h-7 w-7 text-secondary-foreground" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-base">Sou Proprietário de Animais</p>
+                <p className="text-sm text-muted-foreground">
+                  Tenho animais e preciso de transporte
+                </p>
+              </div>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const tipoLabel = selectedType === 'produtor' ? 'Proprietário de Animais' : 'Caminhoneiro';
+  const TipoIcon = selectedType === 'produtor' ? Tractor : Truck;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-earth p-4">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center relative">
           <Button 
             variant="ghost" 
             size="sm" 
             className="absolute left-4 top-4"
-            onClick={() => navigate('/')}
+            onClick={handleGoBack}
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Voltar
           </Button>
+          
+          {/* Profile badge */}
+          <div className="flex justify-center mb-4 pt-4">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              selectedType === 'produtor' 
+                ? 'bg-secondary/20 text-secondary-foreground' 
+                : 'bg-primary/10 text-primary'
+            }`}>
+              <TipoIcon className="h-4 w-4" />
+              <span className="text-sm font-medium">{tipoLabel}</span>
+            </div>
+          </div>
+          
           <CardTitle className="text-2xl">Entrar no FreteBoi</CardTitle>
           <CardDescription>
-            Acesse sua conta ou crie uma nova
+            Acesse sua conta de {tipoLabel}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="register">Criar Conta</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Sua senha"
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button 
-                    type="button" 
-                    variant="link" 
-                    size="sm" 
-                    className="text-xs px-0"
-                    onClick={() => navigate('/reset-password')}
-                  >
-                    Esqueci minha senha
-                  </Button>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Entrando...' : 'Entrar'}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="register">
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground text-center mb-4">
-                  Escolha seu perfil para criar uma conta:
-                </p>
-                
+          {roleError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {roleError}
                 <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex items-center gap-4 justify-start"
-                  onClick={() => navigate('/produtor/cadastro')}
+                  variant="link"
+                  className="p-0 h-auto ml-2 text-destructive-foreground underline"
+                  onClick={handleChangeType}
                 >
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Tractor className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">Sou Produtor</p>
-                    <p className="text-xs text-muted-foreground">
-                      Quero solicitar fretes para meus animais
-                    </p>
-                  </div>
+                  Escolher outro perfil
                 </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex items-center gap-4 justify-start"
-                  onClick={() => navigate('/transportador/cadastro')}
-                >
-                  <div className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center">
-                    <Truck className="h-6 w-6 text-secondary-foreground" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">Sou Transportador</p>
-                    <p className="text-xs text-muted-foreground">
-                      Quero receber solicitações de frete
-                    </p>
-                  </div>
-                </Button>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Sua senha"
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button 
+                type="button" 
+                variant="link" 
+                size="sm" 
+                className="text-xs px-0"
+                onClick={() => navigate('/reset-password')}
+              >
+                Esqueci minha senha
+              </Button>
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Entrando...' : 'Entrar'}
+            </Button>
+          </form>
 
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">
-                      Administrador
-                    </span>
-                  </div>
-                </div>
+          <div className="mt-6 pt-6 border-t text-center">
+            <p className="text-sm text-muted-foreground mb-3">
+              Não tem uma conta?
+            </p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                if (selectedType === 'produtor') {
+                  navigate('/produtor/cadastro');
+                } else {
+                  navigate('/transportador/cadastro');
+                }
+              }}
+            >
+              Criar conta como {tipoLabel}
+            </Button>
+          </div>
 
-                <Button
-                  variant="ghost"
-                  className="w-full h-auto py-3 flex items-center gap-3 justify-start text-muted-foreground"
-                  onClick={() => navigate('/admin/login')}
-                >
-                  <ShieldCheck className="h-5 w-5" />
-                  <span className="text-sm">Acesso administrativo</span>
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
+          <div className="mt-4 text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={handleChangeType}
+            >
+              Entrar com outro perfil
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
