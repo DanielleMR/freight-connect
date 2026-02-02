@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import RouteGuard from "@/components/auth/RouteGuard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -40,30 +41,107 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/transportadores" element={<Transportadores />} />
-            <Route path="/solicitar-frete/:transportadorPublicId" element={<SolicitarFrete />} />
-            <Route path="/fretes" element={<Fretes />} />
-            <Route path="/contrato/:fretePublicId" element={<ContratoFrete />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/transportadores" element={<AdminTransportadores />} />
-            <Route path="/admin/transportadores/novo" element={<AdminTransportadorNovo />} />
-            <Route path="/admin/produtores" element={<AdminProdutores />} />
-            <Route path="/admin/fretes" element={<AdminFretes />} />
-            <Route path="/admin/contratos" element={<AdminContratos />} />
-            <Route path="/admin/documentos" element={<AdminDocumentos />} />
-            <Route path="/admin/chats" element={<AdminChats />} />
-            <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
-            <Route path="/admin/auditoria" element={<AdminAuditoria />} />
-            <Route path="/admin/configuracoes" element={<AdminConfiguracoes />} />
             <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
-            <Route path="/produtor/painel" element={<ProdutorPainel />} />
             <Route path="/transportador/cadastro" element={<TransportadorCadastro />} />
-            <Route path="/transportador/painel" element={<TransportadorPainel />} />
-            <Route path="/transportador/financeiro" element={<TransportadorFinanceiro />} />
-            <Route path="/mapa/transportadores" element={<MapaTransportadores />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            
+            {/* Protected: Produtor routes */}
+            <Route path="/produtor/painel" element={
+              <RouteGuard allowedRoles={['produtor']}>
+                <ProdutorPainel />
+              </RouteGuard>
+            } />
+            <Route path="/solicitar-frete/:transportadorPublicId" element={
+              <RouteGuard allowedRoles={['produtor']}>
+                <SolicitarFrete />
+              </RouteGuard>
+            } />
+            <Route path="/fretes" element={
+              <RouteGuard allowedRoles={['produtor', 'transportador']}>
+                <Fretes />
+              </RouteGuard>
+            } />
+            <Route path="/contrato/:fretePublicId" element={
+              <RouteGuard allowedRoles={['produtor', 'transportador']}>
+                <ContratoFrete />
+              </RouteGuard>
+            } />
+            <Route path="/mapa/transportadores" element={
+              <RouteGuard allowedRoles={['produtor']}>
+                <MapaTransportadores />
+              </RouteGuard>
+            } />
+
+            {/* Protected: Transportador routes */}
+            <Route path="/transportador/painel" element={
+              <RouteGuard allowedRoles={['transportador']}>
+                <TransportadorPainel />
+              </RouteGuard>
+            } />
+            <Route path="/transportador/financeiro" element={
+              <RouteGuard allowedRoles={['transportador']}>
+                <TransportadorFinanceiro />
+              </RouteGuard>
+            } />
+
+            {/* Protected: Admin routes */}
+            <Route path="/admin/transportadores" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminTransportadores />
+              </RouteGuard>
+            } />
+            <Route path="/admin/transportadores/novo" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminTransportadorNovo />
+              </RouteGuard>
+            } />
+            <Route path="/admin/produtores" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminProdutores />
+              </RouteGuard>
+            } />
+            <Route path="/admin/fretes" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminFretes />
+              </RouteGuard>
+            } />
+            <Route path="/admin/contratos" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminContratos />
+              </RouteGuard>
+            } />
+            <Route path="/admin/documentos" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminDocumentos />
+              </RouteGuard>
+            } />
+            <Route path="/admin/chats" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminChats />
+              </RouteGuard>
+            } />
+            <Route path="/admin/financeiro" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminFinanceiro />
+              </RouteGuard>
+            } />
+            <Route path="/admin/auditoria" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminAuditoria />
+              </RouteGuard>
+            } />
+            <Route path="/admin/configuracoes" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminConfiguracoes />
+              </RouteGuard>
+            } />
+            
+            {/* Fallback */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
