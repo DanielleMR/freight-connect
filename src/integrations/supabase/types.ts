@@ -109,6 +109,81 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          active: boolean
+          admin_user_id: string
+          cnpj: string
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          public_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          admin_user_id: string
+          cnpj: string
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          public_id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          admin_user_id?: string
+          cnpj?: string
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          public_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_drivers: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          driver_profile_id: string
+          id: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          driver_profile_id: string
+          id?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          driver_profile_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_drivers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_profile_id_fkey"
+            columns: ["driver_profile_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contratos: {
         Row: {
           aceito_em: string | null
@@ -262,6 +337,66 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_profiles: {
+        Row: {
+          active: boolean
+          cnh_category: string | null
+          cnh_expiry: string | null
+          cnh_number: string | null
+          cnh_status: Database["public"]["Enums"]["cnh_status"]
+          cnh_validated_at: string | null
+          cnh_validated_by: string | null
+          cpf: string
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          public_id: string
+          terms_accepted: boolean
+          terms_accepted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          cnh_category?: string | null
+          cnh_expiry?: string | null
+          cnh_number?: string | null
+          cnh_status?: Database["public"]["Enums"]["cnh_status"]
+          cnh_validated_at?: string | null
+          cnh_validated_by?: string | null
+          cpf: string
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          public_id?: string
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          cnh_category?: string | null
+          cnh_expiry?: string | null
+          cnh_number?: string | null
+          cnh_status?: Database["public"]["Enums"]["cnh_status"]
+          cnh_validated_at?: string | null
+          cnh_validated_by?: string | null
+          cpf?: string
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          public_id?: string
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           ativo: boolean
@@ -279,6 +414,133 @@ export type Database = {
           descricao?: string | null
         }
         Relationships: []
+      }
+      freight_assignments: {
+        Row: {
+          accepted_at: string | null
+          assigned_at: string
+          company_id: string | null
+          company_phone: string | null
+          completed_at: string | null
+          driver_id: string
+          driver_phone: string
+          freight_id: string
+          id: string
+          started_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          assigned_at?: string
+          company_id?: string | null
+          company_phone?: string | null
+          completed_at?: string | null
+          driver_id: string
+          driver_phone: string
+          freight_id: string
+          id?: string
+          started_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          assigned_at?: string
+          company_id?: string | null
+          company_phone?: string | null
+          completed_at?: string | null
+          driver_id?: string
+          driver_phone?: string
+          freight_id?: string
+          id?: string
+          started_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "freight_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freight_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freight_assignments_freight_id_fkey"
+            columns: ["freight_id"]
+            isOneToOne: true
+            referencedRelation: "freights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freight_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      freights: {
+        Row: {
+          animal_quantity: number
+          animal_type: string
+          created_at: string
+          destination: string
+          estimated_value: number | null
+          id: string
+          origin: string
+          producer_id: string
+          public_id: string
+          scheduled_date: string | null
+          special_requirements: string | null
+          status: Database["public"]["Enums"]["freight_status_v2"]
+          updated_at: string
+        }
+        Insert: {
+          animal_quantity: number
+          animal_type: string
+          created_at?: string
+          destination: string
+          estimated_value?: number | null
+          id?: string
+          origin: string
+          producer_id: string
+          public_id?: string
+          scheduled_date?: string | null
+          special_requirements?: string | null
+          status?: Database["public"]["Enums"]["freight_status_v2"]
+          updated_at?: string
+        }
+        Update: {
+          animal_quantity?: number
+          animal_type?: string
+          created_at?: string
+          destination?: string
+          estimated_value?: number | null
+          id?: string
+          origin?: string
+          producer_id?: string
+          public_id?: string
+          scheduled_date?: string | null
+          special_requirements?: string | null
+          status?: Database["public"]["Enums"]["freight_status_v2"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "freights_producer_id_fkey"
+            columns: ["producer_id"]
+            isOneToOne: false
+            referencedRelation: "producer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fretes: {
         Row: {
@@ -545,6 +807,51 @@ export type Database = {
           },
         ]
       }
+      producer_profiles: {
+        Row: {
+          city: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          public_id: string
+          state: string | null
+          terms_accepted: boolean
+          terms_accepted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          public_id?: string
+          state?: string | null
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          public_id?: string
+          state?: string | null
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       produtores: {
         Row: {
           cidade: string | null
@@ -695,6 +1002,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_capabilities: {
+        Row: {
+          active: boolean
+          capability: Database["public"]["Enums"]["user_capability"]
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          capability: Database["public"]["Enums"]["user_capability"]
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          capability?: Database["public"]["Enums"]["user_capability"]
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -712,6 +1043,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicles: {
+        Row: {
+          active: boolean
+          capacity: number
+          created_at: string
+          id: string
+          owner_company_id: string | null
+          owner_user_id: string | null
+          plate: string
+          public_id: string
+          updated_at: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Insert: {
+          active?: boolean
+          capacity: number
+          created_at?: string
+          id?: string
+          owner_company_id?: string | null
+          owner_user_id?: string | null
+          plate: string
+          public_id?: string
+          updated_at?: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Update: {
+          active?: boolean
+          capacity?: number
+          created_at?: string
+          id?: string
+          owner_company_id?: string | null
+          owner_user_id?: string | null
+          plate?: string
+          public_id?: string
+          updated_at?: string
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_owner_company_id_fkey"
+            columns: ["owner_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -935,6 +1313,10 @@ export type Database = {
         }
         Returns: string
       }
+      driver_can_accept_freight: {
+        Args: { _driver_id: string }
+        Returns: boolean
+      }
       frete_pode_avancar: { Args: { p_frete_id: string }; Returns: boolean }
       generate_default_frete_id: { Args: never; Returns: string }
       generate_default_produtor_id: { Args: never; Returns: string }
@@ -986,6 +1368,13 @@ export type Database = {
           tipo_caminhao: string
         }[]
       }
+      has_capability: {
+        Args: {
+          _capability: Database["public"]["Enums"]["user_capability"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1025,9 +1414,11 @@ export type Database = {
         Args: { p_frete_id: string; p_novo_status: string }
         Returns: boolean
       }
+      vehicle_is_available: { Args: { _vehicle_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "produtor" | "transportador"
+      cnh_status: "pending" | "validated" | "rejected"
       documento_status: "pendente" | "aprovado" | "reprovado"
       documento_tipo:
         | "cpf_cnpj"
@@ -1035,6 +1426,12 @@ export type Database = {
         | "cnh"
         | "crlv"
         | "documento_veiculo"
+      freight_status_v2:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
       frete_status:
         | "solicitado"
         | "aceito"
@@ -1043,6 +1440,8 @@ export type Database = {
         | "concluido"
       pagamento_status: "pendente" | "pago" | "cancelado"
       plano_tipo: "free" | "pro"
+      user_capability: "producer" | "driver" | "company_admin"
+      vehicle_type: "truck" | "carreta" | "bitruck" | "romeu_julieta"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1171,6 +1570,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "produtor", "transportador"],
+      cnh_status: ["pending", "validated", "rejected"],
       documento_status: ["pendente", "aprovado", "reprovado"],
       documento_tipo: [
         "cpf_cnpj",
@@ -1178,6 +1578,13 @@ export const Constants = {
         "cnh",
         "crlv",
         "documento_veiculo",
+      ],
+      freight_status_v2: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
       ],
       frete_status: [
         "solicitado",
@@ -1188,6 +1595,8 @@ export const Constants = {
       ],
       pagamento_status: ["pendente", "pago", "cancelado"],
       plano_tipo: ["free", "pro"],
+      user_capability: ["producer", "driver", "company_admin"],
+      vehicle_type: ["truck", "carreta", "bitruck", "romeu_julieta"],
     },
   },
 } as const
