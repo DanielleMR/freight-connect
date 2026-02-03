@@ -1,63 +1,116 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Truck, Tractor } from "lucide-react";
+import { Truck, User, Building2 } from "lucide-react";
 
-export type UserType = 'transportador' | 'produtor';
+export type UserType = "producer" | "driver" | "company_admin";
 
 interface UserTypeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: 'login' | 'register';
-  onSelect: (type: UserType) => void;
+  mode: "login" | "register";
 }
 
-const UserTypeModal = ({ open, onOpenChange, mode, onSelect }: UserTypeModalProps) => {
-  const title = mode === 'login' ? 'Como você deseja entrar?' : 'Como você deseja se cadastrar?';
-  const description = mode === 'login' 
-    ? 'Selecione seu perfil para acessar sua conta'
-    : 'Escolha o tipo de conta que deseja criar';
+const UserTypeModal = ({ open, onOpenChange, mode }: UserTypeModalProps) => {
+  const navigate = useNavigate();
+  const [selectedType, setSelectedType] = useState<UserType | null>(null);
+
+  const options = [
+    {
+      id: "producer" as const,
+      icon: User,
+      title: "Proprietário de Animais",
+      description: "Solicitar fretes para transportar seus animais",
+      loginRoute: "/auth?tipo=producer",
+      registerRoute: "/cadastro/produtor",
+    },
+    {
+      id: "driver" as const,
+      icon: Truck,
+      title: "Caminhoneiro",
+      description: "Aceitar e realizar fretes de transporte de animais",
+      loginRoute: "/auth?tipo=driver",
+      registerRoute: "/cadastro/motorista",
+    },
+    {
+      id: "company_admin" as const,
+      icon: Building2,
+      title: "Empresa de Transporte",
+      description: "Gerenciar frota de veículos e motoristas",
+      loginRoute: "/auth?tipo=company_admin",
+      registerRoute: "/cadastro/empresa",
+    },
+  ];
+
+  const handleContinue = () => {
+    const option = options.find((o) => o.id === selectedType);
+    if (option) {
+      onOpenChange(false);
+      navigate(mode === "login" ? option.loginRoute : option.registerRoute);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl">{title}</DialogTitle>
-          <DialogDescription className="text-center">
-            {description}
+          <DialogTitle>
+            {mode === "login" ? "Selecione seu Perfil" : "Criar Nova Conta"}
+          </DialogTitle>
+          <DialogDescription>
+            {mode === "login"
+              ? "Escolha como deseja acessar a plataforma"
+              : "Escolha o tipo de conta que deseja criar"}
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <Button
-            variant="outline"
-            className="w-full h-auto py-5 flex items-center gap-4 justify-start hover:border-primary hover:bg-primary/5 transition-all"
-            onClick={() => onSelect('transportador')}
-          >
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Truck className="h-7 w-7 text-primary" />
-            </div>
-            <div className="text-left">
-              <p className="font-semibold text-base">Sou Caminhoneiro</p>
-              <p className="text-sm text-muted-foreground">
-                Transporto animais e quero receber fretes
-              </p>
-            </div>
-          </Button>
 
+        <div className="space-y-3 py-4">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setSelectedType(option.id)}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                selectedType === option.id
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50 hover:bg-muted/50"
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <option.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm">{option.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {option.description}
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
           <Button
             variant="outline"
-            className="w-full h-auto py-5 flex items-center gap-4 justify-start hover:border-secondary hover:bg-secondary/5 transition-all"
-            onClick={() => onSelect('produtor')}
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
           >
-            <div className="w-14 h-14 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
-              <Tractor className="h-7 w-7 text-secondary-foreground" />
-            </div>
-            <div className="text-left">
-              <p className="font-semibold text-base">Sou Proprietário de Animais</p>
-              <p className="text-sm text-muted-foreground">
-                Tenho animais e preciso de transporte
-              </p>
-            </div>
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={handleContinue}
+            disabled={!selectedType}
+          >
+            Continuar
           </Button>
         </div>
       </DialogContent>

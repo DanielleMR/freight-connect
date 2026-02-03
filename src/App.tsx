@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import RouteGuard from "@/components/auth/RouteGuard";
+import CapabilityGuard from "@/components/auth/CapabilityGuard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -30,6 +31,9 @@ import TransportadorFinanceiro from "./pages/transportador/TransportadorFinancei
 import MapaTransportadores from "./pages/mapa/MapaTransportadores";
 import ContratoFrete from "./pages/contrato/ContratoFrete";
 import ResetPassword from "./pages/ResetPassword";
+import CadastroProdutor from "./pages/cadastro/CadastroProdutor";
+import CadastroMotorista from "./pages/cadastro/CadastroMotorista";
+import CadastroEmpresa from "./pages/cadastro/CadastroEmpresa";
 
 const queryClient = new QueryClient();
 
@@ -45,39 +49,48 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/transportadores" element={<Transportadores />} />
-            <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
-            <Route path="/transportador/cadastro" element={<TransportadorCadastro />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             
-            {/* Protected: Produtor routes */}
+            {/* New registration routes (public, but require auth first) */}
+            <Route path="/cadastro/produtor" element={<CadastroProdutor />} />
+            <Route path="/cadastro/motorista" element={<CadastroMotorista />} />
+            <Route path="/cadastro/empresa" element={<CadastroEmpresa />} />
+            
+            {/* Legacy routes - redirect to new flow */}
+            <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
+            <Route path="/transportador/cadastro" element={<TransportadorCadastro />} />
+            
+            {/* Protected: Produtor routes (using capabilities) */}
             <Route path="/produtor/painel" element={
-              <RouteGuard allowedRoles={['produtor']}>
+              <CapabilityGuard requiredCapabilities={['producer']}>
                 <ProdutorPainel />
-              </RouteGuard>
+              </CapabilityGuard>
             } />
             <Route path="/solicitar-frete/:transportadorPublicId" element={
-              <RouteGuard allowedRoles={['produtor']}>
+              <CapabilityGuard requiredCapabilities={['producer']}>
                 <SolicitarFrete />
-              </RouteGuard>
-            } />
-            <Route path="/fretes" element={
-              <RouteGuard allowedRoles={['produtor', 'transportador']}>
-                <Fretes />
-              </RouteGuard>
-            } />
-            <Route path="/contrato/:fretePublicId" element={
-              <RouteGuard allowedRoles={['produtor', 'transportador']}>
-                <ContratoFrete />
-              </RouteGuard>
+              </CapabilityGuard>
             } />
             <Route path="/mapa/transportadores" element={
-              <RouteGuard allowedRoles={['produtor']}>
+              <CapabilityGuard requiredCapabilities={['producer']}>
                 <MapaTransportadores />
-              </RouteGuard>
+              </CapabilityGuard>
             } />
 
-            {/* Protected: Transportador routes */}
+            {/* Protected: Driver routes (using capabilities) */}
+            <Route path="/motorista/painel" element={
+              <CapabilityGuard requiredCapabilities={['driver']}>
+                <TransportadorPainel />
+              </CapabilityGuard>
+            } />
+            <Route path="/motorista/financeiro" element={
+              <CapabilityGuard requiredCapabilities={['driver']}>
+                <TransportadorFinanceiro />
+              </CapabilityGuard>
+            } />
+            
+            {/* Legacy transportador routes - also map to driver */}
             <Route path="/transportador/painel" element={
               <RouteGuard allowedRoles={['transportador']}>
                 <TransportadorPainel />
@@ -89,7 +102,19 @@ const App = () => (
               </RouteGuard>
             } />
 
-            {/* Protected: Admin routes */}
+            {/* Protected: Shared routes */}
+            <Route path="/fretes" element={
+              <CapabilityGuard requiredCapabilities={['producer', 'driver']}>
+                <Fretes />
+              </CapabilityGuard>
+            } />
+            <Route path="/contrato/:fretePublicId" element={
+              <CapabilityGuard requiredCapabilities={['producer', 'driver']}>
+                <ContratoFrete />
+              </CapabilityGuard>
+            } />
+
+            {/* Protected: Admin routes (using roles) */}
             <Route path="/admin/transportadores" element={
               <RouteGuard allowedRoles={['admin']}>
                 <AdminTransportadores />

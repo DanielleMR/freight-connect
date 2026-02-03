@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Truck, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import UserTypeModal, { UserType } from "@/components/auth/UserTypeModal";
+import UserTypeModal from "@/components/auth/UserTypeModal";
 
 /**
  * Header - Componente de navegação principal
@@ -12,7 +11,6 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'login' | 'register'>('login');
-  const navigate = useNavigate();
 
   const navLinks = [
     { label: "Início", href: "#" },
@@ -29,22 +27,6 @@ const Header = () => {
   const handleCadastrarClick = () => {
     setModalMode('register');
     setModalOpen(true);
-  };
-
-  const handleTypeSelect = (type: UserType) => {
-    setModalOpen(false);
-    
-    if (modalMode === 'login') {
-      // Navegar para auth com o tipo selecionado
-      navigate(`/auth?tipo=${type}`);
-    } else {
-      // Navegar para cadastro do tipo selecionado
-      if (type === 'produtor') {
-        navigate('/produtor/cadastro');
-      } else {
-        navigate('/transportador/cadastro');
-      }
-    }
   };
 
   return (
@@ -127,7 +109,6 @@ const Header = () => {
         open={modalOpen}
         onOpenChange={setModalOpen}
         mode={modalMode}
-        onSelect={handleTypeSelect}
       />
     </>
   );
