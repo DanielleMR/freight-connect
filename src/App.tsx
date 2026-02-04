@@ -34,6 +34,7 @@ import ResetPassword from "./pages/ResetPassword";
 import CadastroProdutor from "./pages/cadastro/CadastroProdutor";
 import CadastroMotorista from "./pages/cadastro/CadastroMotorista";
 import CadastroEmpresa from "./pages/cadastro/CadastroEmpresa";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,13 @@ const App = () => (
             {/* Legacy routes - redirect to new flow */}
             <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
             <Route path="/transportador/cadastro" element={<TransportadorCadastro />} />
+            
+            {/* Protected: Unified Dashboard */}
+            <Route path="/painel" element={
+              <CapabilityGuard requiredCapabilities={['producer', 'driver', 'company_admin']}>
+                <Dashboard />
+              </CapabilityGuard>
+            } />
             
             {/* Protected: Produtor routes (using capabilities) */}
             <Route path="/produtor/painel" element={
