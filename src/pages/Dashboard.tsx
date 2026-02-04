@@ -2,26 +2,31 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserCapabilities } from "@/hooks/useUserCapabilities";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { QuickActionCard } from "@/components/dashboard/QuickActionCard";
-import { RecentActivityList } from "@/components/dashboard/RecentActivityList";
-import { 
-  Package, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
-  Truck, 
-  MapPin, 
-  FileText,
-  TrendingUp,
-  Wallet,
-  Plus
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { CapabilityToggle } from "@/components/dashboard/CapabilityToggle";
+import { ActivityTimeline } from "@/components/dashboard/ActivityTimeline";
+import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
+import { NotificationBell } from "@/components/ui/notification-bell";
 import { Button } from "@/components/ui/button";
+import { 
+  CheckCircle2, 
+  Truck, 
+  Clock, 
+  Package,
+  LogOut,
+  Settings
+} from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
+/**
+ * Dashboard - Unified control panel
+ * 
+ * Design principles:
+ * - 70% information / 30% action
+ * - Click on metrics to see details
+ * - Information-first, action-second
+ * - Prepared for future audit/admin features
+ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -42,246 +47,154 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando painel...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm">Carregando painel...</p>
         </div>
       </div>
     );
   }
 
-  const isProducer = activeCapability === 'producer';
-  const isDriver = activeCapability === 'driver';
+  const stats = data?.stats || { total: 0, pending: 0, active: 0, completed: 0, cancelled: 0, totalAnimals: 0 };
+
+  // Summary items for the sidebar
+  const summaryItems = [
+    { label: 'Aguardando', value: stats.pending, color: 'bg-amber-500' },
+    { label: 'Em andamento', value: stats.active, color: 'bg-blue-500' },
+    { label: 'Concluídos', value: stats.completed, color: 'bg-emerald-500' },
+    { label: 'Cancelados', value: stats.cancelled, color: 'bg-red-500' },
+  ];
 
   return (
     <>
       <Helmet>
         <title>Painel | FreteBoi</title>
-        <meta name="description" content="Gerencie seus fretes e acompanhe suas operações" />
+        <meta name="description" content="Painel de controle - Gerencie fretes e acompanhe operações" />
       </Helmet>
 
       <div className="min-h-screen bg-background">
-        <DashboardHeader
-          userName={data?.userName || 'Usuário'}
-          activeCapability={activeCapability}
-          capabilities={capabilities}
-          onCapabilityChange={setActiveCapability}
-          onLogout={handleLogout}
-        />
+        {/* Header - Minimal */}
+        <header className="bg-card border-b border-border sticky top-0 z-40">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-14">
+              {/* Logo */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-hero flex items-center justify-center">
+                  <Truck className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="font-display font-bold text-lg">
+                  Frete<span className="text-primary">Boi</span>
+                </span>
+              </div>
 
+              {/* Right actions */}
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <Button variant="ghost" size="icon" onClick={() => navigate('/configuracoes')}>
+                  <Settings className="h-5 w-5" />
+                </Button>
+                <div className="hidden md:flex items-center gap-2 pl-2 border-l border-border ml-2">
+                  <span className="text-sm text-muted-foreground">
+                    {data?.userName}
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main content */}
         <main className="container mx-auto px-4 py-6">
-          {/* Welcome Section */}
+          {/* Capability toggle - Simple, non-intrusive */}
           <div className="mb-6">
-            <h2 className="text-2xl font-display font-bold text-foreground">
-              Bem-vindo, {data?.userName}! 👋
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              {isProducer 
-                ? "Acompanhe seus fretes e encontre os melhores transportadores."
-                : "Veja os fretes disponíveis e gerencie suas entregas."
-              }
+            <CapabilityToggle
+              activeCapability={activeCapability}
+              capabilities={capabilities}
+              onCapabilityChange={setActiveCapability}
+            />
+          </div>
+
+          {/* Page title - Minimal */}
+          <div className="mb-8">
+            <h1 className="text-xl font-semibold text-foreground">
+              Painel de Controle
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              O que está acontecendo agora e o que já foi feito
             </p>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              title="Total de Fretes"
-              value={data?.stats.total || 0}
-              icon={Package}
-              variant="accent"
-              sparklineData={data?.sparklineData.completed}
-              onClick={() => navigate('/fretes')}
-            />
-            <StatCard
-              title={isProducer ? "Pendentes" : "Novas Solicitações"}
-              value={data?.stats.pending || 0}
-              icon={Clock}
-              variant="warning"
-              sparklineData={data?.sparklineData.pending}
-              onClick={() => navigate('/fretes')}
-            />
-            <StatCard
-              title="Em Andamento"
-              value={data?.stats.active || 0}
-              icon={Truck}
-              variant="info"
-              sparklineData={data?.sparklineData.active}
-              onClick={() => navigate('/fretes')}
-            />
-            <StatCard
-              title="Concluídos"
-              value={data?.stats.completed || 0}
-              icon={CheckCircle2}
-              variant="success"
-              sparklineData={data?.sparklineData.completed}
-              onClick={() => navigate('/fretes')}
-            />
-          </div>
+          {/* Main Grid */}
+          <div className="grid lg:grid-cols-4 gap-6">
+            {/* Metrics - 4 large clickable cards */}
+            <div className="lg:col-span-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <MetricCard
+                  title="Concluídos"
+                  value={stats.completed}
+                  icon={CheckCircle2}
+                  onClick={() => navigate('/fretes?status=concluido')}
+                />
+                <MetricCard
+                  title="Animais Transportados"
+                  value={stats.totalAnimals.toLocaleString('pt-BR')}
+                  subtitle="Total histórico"
+                  icon={Package}
+                  onClick={() => navigate('/fretes?status=concluido')}
+                />
+                <MetricCard
+                  title="Em Andamento"
+                  value={stats.active}
+                  icon={Truck}
+                  onClick={() => navigate('/fretes?status=em_andamento')}
+                />
+                <MetricCard
+                  title="Aguardando"
+                  value={stats.pending}
+                  subtitle="Pendente transportador"
+                  icon={Clock}
+                  onClick={() => navigate('/fretes?status=solicitado')}
+                />
+              </div>
 
-          {/* Main Content Grid */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Left Column - Quick Actions */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Ações Rápidas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    {isProducer ? (
-                      <>
-                        <QuickActionCard
-                          title="Solicitar Frete"
-                          description="Encontre transportadores e solicite um novo frete"
-                          icon={Plus}
-                          buttonLabel="Novo Frete"
-                          onClick={() => navigate('/mapa/transportadores')}
-                        />
-                        <QuickActionCard
-                          title="Ver Transportadores"
-                          description="Visualize transportadores disponíveis na sua região"
-                          icon={MapPin}
-                          buttonLabel="Ver Mapa"
-                          buttonVariant="outline"
-                          onClick={() => navigate('/mapa/transportadores')}
-                        />
-                        <QuickActionCard
-                          title="Meus Fretes"
-                          description="Acompanhe o status de todos os seus fretes"
-                          icon={FileText}
-                          buttonLabel="Ver Fretes"
-                          buttonVariant="secondary"
-                          onClick={() => navigate('/fretes')}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <QuickActionCard
-                          title="Fretes Disponíveis"
-                          description="Veja novas oportunidades de frete na sua região"
-                          icon={Package}
-                          buttonLabel="Ver Fretes"
-                          onClick={() => navigate('/fretes')}
-                        />
-                        <QuickActionCard
-                          title="Meus Veículos"
-                          description="Gerencie sua frota de veículos"
-                          icon={Truck}
-                          buttonLabel="Gerenciar"
-                          buttonVariant="outline"
-                          onClick={() => navigate('/motorista/veiculos')}
-                        />
-                        <QuickActionCard
-                          title="Financeiro"
-                          description="Acompanhe ganhos e pagamentos"
-                          icon={Wallet}
-                          buttonLabel="Ver Financeiro"
-                          buttonVariant="secondary"
-                          onClick={() => navigate('/motorista/financeiro')}
-                        />
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <RecentActivityList
-                title="Atividade Recente"
-                items={data?.recentFretes || []}
-                onItemClick={(item) => navigate(`/contrato/${item.publicId}`)}
-                onViewAllClick={() => navigate('/fretes')}
-                emptyMessage={
-                  isProducer 
-                    ? "Você ainda não solicitou nenhum frete. Comece agora!"
-                    : "Nenhum frete encontrado. Novos fretes aparecerão aqui."
-                }
-              />
+              {/* Activity Timeline */}
+              <div className="bg-card rounded-xl border border-border p-5">
+                <ActivityTimeline
+                  items={data?.recentFretes || []}
+                  onItemClick={(item) => navigate(`/contrato/${item.publicId}`)}
+                  onViewAllClick={() => navigate('/fretes')}
+                  emptyMessage="Nenhum frete registrado ainda"
+                />
+              </div>
             </div>
 
-            {/* Right Column - Summary */}
-            <div className="space-y-6">
-              {/* Performance Summary */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    Resumo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Taxa de Conclusão</span>
-                      <span className="font-semibold">
-                        {data?.stats.total 
-                          ? Math.round((data.stats.completed / data.stats.total) * 100)
-                          : 0}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all"
-                        style={{ 
-                          width: `${data?.stats.total 
-                            ? Math.round((data.stats.completed / data.stats.total) * 100) 
-                            : 0}%` 
-                        }}
-                      />
-                    </div>
+            {/* Sidebar - Summary */}
+            <div className="space-y-4">
+              <DashboardSummary
+                title="Resumo de Status"
+                items={summaryItems}
+                total={stats.total}
+              />
 
-                    <div className="pt-4 space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-amber-500" />
-                          <span className="text-muted-foreground">Pendentes</span>
-                        </div>
-                        <span className="font-medium">{data?.stats.pending || 0}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-500" />
-                          <span className="text-muted-foreground">Ativos</span>
-                        </div>
-                        <span className="font-medium">{data?.stats.active || 0}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                          <span className="text-muted-foreground">Concluídos</span>
-                        </div>
-                        <span className="font-medium">{data?.stats.completed || 0}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-red-500" />
-                          <span className="text-muted-foreground">Cancelados</span>
-                        </div>
-                        <span className="font-medium">{data?.stats.cancelled || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Future Metrics Placeholder */}
-              <Card className="border-dashed">
-                <CardContent className="py-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                    <Wallet className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Métricas Financeiras
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Em breve: ganhos, SLA, bem-estar animal
-                  </p>
-                </CardContent>
-              </Card>
+              {/* Future metrics placeholder */}
+              <div className="p-5 rounded-xl border border-dashed border-border bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground text-center">
+                  Métricas financeiras e SLA
+                </p>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  Em breve
+                </p>
+                {/* Audit hook placeholder */}
+                <div className="hidden" data-audit-hook="future-metrics" />
+              </div>
             </div>
           </div>
         </main>
+
+        {/* Hidden audit hooks for future admin features */}
+        <div className="hidden" data-audit-hook="dashboard-root" data-last-updated={data?.auditMeta?.lastUpdated} />
       </div>
     </>
   );

@@ -8,14 +8,17 @@ type FreteStatus = Database['public']['Enums']['frete_status'];
 
 interface FreteStats {
   total: number;
-  pending: number;
-  active: number;
-  completed: number;
+  pending: number;          // aguardando transportador
+  active: number;           // em andamento
+  completed: number;        // concluídos
   cancelled: number;
+  totalAnimals: number;     // animais transportados
 }
 
-interface SparklinePoint {
-  value: number;
+// Micro-hooks for future admin features
+interface AuditMetadata {
+  lastUpdated: string;
+  pendingActions: number;
 }
 
 interface RecentFrete {
@@ -33,11 +36,8 @@ interface DashboardData {
   userName: string;
   stats: FreteStats;
   recentFretes: RecentFrete[];
-  sparklineData: {
-    pending: SparklinePoint[];
-    active: SparklinePoint[];
-    completed: SparklinePoint[];
-  };
+  // Audit metadata - prepared for future admin features
+  auditMeta?: AuditMetadata;
 }
 
 interface UseDashboardDataReturn {
@@ -135,9 +135,9 @@ export function useDashboardData(): UseDashboardDataReturn {
         // Use email as fallback
         setData({
           userName: user.email?.split('@')[0] || 'Usuário',
-          stats: { total: 0, pending: 0, active: 0, completed: 0, cancelled: 0 },
+          stats: { total: 0, pending: 0, active: 0, completed: 0, cancelled: 0, totalAnimals: 0 },
           recentFretes: [],
-          sparklineData: { pending: [], active: [], completed: [] },
+          auditMeta: { lastUpdated: new Date().toISOString(), pendingActions: 0 },
         });
         return;
       }
@@ -161,26 +161,21 @@ export function useDashboardData(): UseDashboardDataReturn {
       const { data: fretes } = await fretesQuery;
       const freightList = fretes || [];
 
-      // Calculate stats
+      // Calculate stats including total animals transported
+      const completedFretes = freightList.filter(f => f.status === 'concluido');
+      const totalAnimals = completedFretes.reduce((sum, f) => sum + (f.quantidade_animais || 0), 0);
+      
       const stats: FreteStats = {
         total: freightList.length,
         pending: freightList.filter(f => f.status === 'solicitado').length,
         active: freightList.filter(f => ['aceito', 'em_andamento'].includes(f.status)).length,
-        completed: freightList.filter(f => f.status === 'concluido').length,
+        completed: completedFretes.length,
         cancelled: freightList.filter(f => f.status === 'recusado').length,
+        totalAnimals,
       };
 
-      // Generate sparkline data (last 7 data points simulation)
-      const generateSparkline = (count: number): SparklinePoint[] => {
-        if (count === 0) return [];
-        const base = Math.max(1, count - 3);
-        return Array.from({ length: 7 }, (_, i) => ({
-          value: base + Math.floor(Math.random() * 4) + (i > 4 ? 1 : 0),
-        }));
-      };
-
-      // Map recent fretes
-      const recentFretes: RecentFrete[] = freightList.slice(0, 5).map(f => ({
+      // Map recent fretes (for timeline)
+      const recentFretes: RecentFrete[] = freightList.slice(0, 6).map(f => ({
         id: f.id,
         publicId: f.public_id,
         origin: f.origem,
@@ -191,15 +186,17 @@ export function useDashboardData(): UseDashboardDataReturn {
         quantity: f.quantidade_animais,
       }));
 
+      // Prepare audit metadata (hook for future admin features)
+      const auditMeta: AuditMetadata = {
+        lastUpdated: new Date().toISOString(),
+        pendingActions: stats.pending,
+      };
+
       setData({
         userName: profileData.name,
         stats,
         recentFretes,
-        sparklineData: {
-          pending: generateSparkline(stats.pending),
-          active: generateSparkline(stats.active),
-          completed: generateSparkline(stats.completed),
-        },
+        auditMeta,
       });
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
