@@ -23,6 +23,7 @@ import AdminDocumentos from "./pages/admin/AdminDocumentos";
 import AdminChats from "./pages/admin/AdminChats";
 import AdminFinanceiro from "./pages/admin/AdminFinanceiro";
 import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
+import AdminOperacoes from "./pages/admin/AdminOperacoes";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
@@ -171,6 +172,11 @@ const App = () => (
             <Route path="/admin/configuracoes" element={
               <RouteGuard allowedRoles={['admin']}>
                 <AdminConfiguracoes />
+              </RouteGuard>
+            } />
+            <Route path="/admin/operacoes" element={
+              <RouteGuard allowedRoles={['admin']}>
+                <AdminOperacoes />
               </RouteGuard>
             } />
             

@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      aceites_termos: {
+        Row: {
+          aceito_em: string
+          id: string
+          ip_aceite: string | null
+          tipo_termo: string
+          user_id: string
+          versao: string
+        }
+        Insert: {
+          aceito_em?: string
+          id?: string
+          ip_aceite?: string | null
+          tipo_termo: string
+          user_id: string
+          versao?: string
+        }
+        Update: {
+          aceito_em?: string
+          id?: string
+          ip_aceite?: string | null
+          tipo_termo?: string
+          user_id?: string
+          versao?: string
+        }
+        Relationships: []
+      }
       auditoria: {
         Row: {
           acao: string
@@ -288,6 +315,53 @@ export type Database = {
             columns: ["transportador_id"]
             isOneToOne: false
             referencedRelation: "transportadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disputas: {
+        Row: {
+          aberto_por: string
+          created_at: string
+          frete_id: string
+          id: string
+          motivo: string
+          resolucao: string | null
+          resolvido_em: string | null
+          resolvido_por: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aberto_por: string
+          created_at?: string
+          frete_id: string
+          id?: string
+          motivo: string
+          resolucao?: string | null
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aberto_por?: string
+          created_at?: string
+          frete_id?: string
+          id?: string
+          motivo?: string
+          resolucao?: string | null
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputas_frete_id_fkey"
+            columns: ["frete_id"]
+            isOneToOne: false
+            referencedRelation: "fretes"
             referencedColumns: ["id"]
           },
         ]
@@ -906,6 +980,39 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      suspensoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          motivo: string
+          removido_em: string | null
+          removido_por: string | null
+          suspenso_por: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          motivo: string
+          removido_em?: string | null
+          removido_por?: string | null
+          suspenso_por: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          motivo?: string
+          removido_em?: string | null
+          removido_por?: string | null
+          suspenso_por?: string
+          user_id?: string
         }
         Relationships: []
       }
