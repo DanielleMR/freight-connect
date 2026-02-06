@@ -16,6 +16,8 @@ import { FreteTimeline } from "@/components/frete/FreteTimeline";
 import { Send, Edit, DollarSign, Calendar, Ruler, Eye, Download, XCircle, AlertTriangle, Filter } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { exportToCSV } from "@/lib/csv-export";
+import { AdminForcarEncerramento } from "@/components/admin/AdminForcarEncerramento";
+import { AdminFreteBlockDisputa } from "@/components/admin/AdminFreteBlockDisputa";
 
 type FreteStatus = Database['public']['Enums']['frete_status'];
 
@@ -418,6 +420,20 @@ const AdminFretes = () => {
                               </Button>
                             )}
                             
+                            <AdminForcarEncerramento
+                              freteId={f.id}
+                              fretePublicId={f.public_id}
+                              freteStatus={f.status}
+                              pagamentoConfirmado={f.pagamento_confirmado}
+                              onSuccess={fetchFretes}
+                            />
+                            
+                            <AdminFreteBlockDisputa
+                              freteId={f.id}
+                              fretePublicId={f.public_id}
+                              onSuccess={fetchFretes}
+                            />
+                            
                             <Dialog open={dialogOpen && selectedFrete === f.id} onOpenChange={(open) => {
                               setDialogOpen(open);
                               if (!open) {
@@ -528,10 +544,29 @@ const AdminFretes = () => {
             <DialogTitle>Editar Frete</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Read-only fields */}
+            {editFrete && (
+              <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
+                <p><span className="text-muted-foreground">ID:</span> <span className="font-mono">{editFrete.public_id}</span></p>
+                <p><span className="text-muted-foreground">Origem:</span> {editFrete.origem} → {editFrete.destino}</p>
+                {editFrete.pagamento_confirmado && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
+                    <p className="text-xs font-medium text-yellow-800">⚠️ Pagamento confirmado — valor é somente leitura</p>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="editValor"><DollarSign className="h-3 w-3 inline mr-1" />Valor (R$)</Label>
-                <Input id="editValor" type="number" step="0.01" value={editValor} onChange={(e) => setEditValor(e.target.value)} />
+                <Input
+                  id="editValor"
+                  type="number"
+                  step="0.01"
+                  value={editValor}
+                  onChange={(e) => setEditValor(e.target.value)}
+                  disabled={editFrete?.pagamento_confirmado}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="editDistancia"><Ruler className="h-3 w-3 inline mr-1" />Distância (km)</Label>
@@ -540,7 +575,7 @@ const AdminFretes = () => {
             </div>
             <div className="space-y-2">
               <Label>Tipo de Cobrança</Label>
-              <Select value={editTipoCobranca} onValueChange={setEditTipoCobranca}>
+              <Select value={editTipoCobranca} onValueChange={setEditTipoCobranca} disabled={editFrete?.pagamento_confirmado}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="valor_fechado">Valor Fechado</SelectItem>

@@ -2,10 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserCapabilities } from "@/hooks/useUserCapabilities";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { CapabilityToggle } from "@/components/dashboard/CapabilityToggle";
 import { ActivityTimeline } from "@/components/dashboard/ActivityTimeline";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
+import { TermsAcceptanceModal } from "@/components/auth/TermsAcceptanceModal";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { Button } from "@/components/ui/button";
 import { 
@@ -29,8 +31,9 @@ import { Helmet } from "react-helmet-async";
  */
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { capabilities } = useUserCapabilities();
+  const { needsAcceptance, recheckTerms } = useTermsAcceptance();
   const { 
     data, 
     loading, 
@@ -195,6 +198,11 @@ const Dashboard = () => {
 
         {/* Hidden audit hooks for future admin features */}
         <div className="hidden" data-audit-hook="dashboard-root" data-last-updated={data?.auditMeta?.lastUpdated} />
+
+        {/* Terms acceptance modal */}
+        {user && needsAcceptance && (
+          <TermsAcceptanceModal userId={user.id} open={needsAcceptance} onAccepted={recheckTerms} />
+        )}
       </div>
     </>
   );
