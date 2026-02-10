@@ -30,6 +30,9 @@ interface RecentFrete {
   createdAt: string;
   animalType?: string | null;
   quantity?: number | null;
+  // Enriched event data
+  eventType?: 'frete' | 'disputa' | 'encerramento';
+  eventLabel?: string;
 }
 
 interface DashboardData {
@@ -184,7 +187,40 @@ export function useDashboardData(): UseDashboardDataReturn {
         createdAt: f.created_at || new Date().toISOString(),
         animalType: f.tipo_animal,
         quantity: f.quantidade_animais,
+        eventType: 'frete' as const,
       }));
+
+      // Fetch disputes related to the user's fretes for timeline enrichment
+      const freteIds = freightList.map(f => f.id);
+      if (freteIds.length > 0) {
+        const { data: disputas } = await supabase
+          .from('disputas')
+          .select('id, frete_id, motivo, status, created_at')
+          .in('frete_id', freteIds)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (disputas && disputas.length > 0) {
+          for (const d of disputas) {
+            const frete = freightList.find(f => f.id === d.frete_id);
+            if (frete) {
+              recentFretes.push({
+                id: d.id,
+                publicId: frete.public_id,
+                origin: frete.origem,
+                destination: frete.destino,
+                status: frete.status,
+                createdAt: d.created_at,
+                eventType: 'disputa',
+                eventLabel: `Disputa ${d.status === 'resolvida' ? 'resolvida' : 'aberta'}: ${d.motivo.slice(0, 50)}`,
+              });
+            }
+          }
+          // Re-sort by date and limit
+          recentFretes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          recentFretes.splice(8);
+        }
+      }
 
       // Prepare audit metadata (hook for future admin features)
       const auditMeta: AuditMetadata = {

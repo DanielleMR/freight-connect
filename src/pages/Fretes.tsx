@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StarRating } from '@/components/ui/star-rating';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck, FileText, CheckCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck, FileText, CheckCircle, Filter } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { FreteTimeline } from '@/components/frete/FreteTimeline';
 
@@ -50,6 +51,8 @@ export default function Fretes() {
   const [comentario, setComentario] = useState('');
   const [submittingAvaliacao, setSubmittingAvaliacao] = useState(false);
   const [avaliacoesExistentes, setAvaliacoesExistentes] = useState<Set<string>>(new Set());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filtroStatus, setFiltroStatus] = useState<string>(searchParams.get('status') || 'todos');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -144,6 +147,20 @@ export default function Fretes() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  const handleFilterChange = (value: string) => {
+    setFiltroStatus(value);
+    if (value === 'todos') {
+      searchParams.delete('status');
+    } else {
+      searchParams.set('status', value);
+    }
+    setSearchParams(searchParams);
+  };
+
+  const fretesFiltrados = filtroStatus === 'todos'
+    ? fretes
+    : fretes.filter(f => f.status === filtroStatus);
+
   if (loading) {
     return <div className="p-4 flex items-center justify-center min-h-screen">Carregando...</div>;
   }
@@ -152,25 +169,55 @@ export default function Fretes() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/produtor/painel')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/painel')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold">Meus Fretes</h1>
         </div>
 
-        {fretes.length === 0 ? (
+        {/* Status filter */}
+        <div className="flex items-center gap-3 mb-6">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filtroStatus} onValueChange={handleFilterChange}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filtrar por status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os status</SelectItem>
+              <SelectItem value="solicitado">Aguardando</SelectItem>
+              <SelectItem value="aceito">Aceito</SelectItem>
+              <SelectItem value="em_andamento">Em Andamento</SelectItem>
+              <SelectItem value="concluido">Concluído</SelectItem>
+              <SelectItem value="recusado">Recusado</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">
+            {fretesFiltrados.length} frete(s)
+          </span>
+        </div>
+
+        {fretesFiltrados.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <Truck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Nenhum frete encontrado.</p>
-              <Button className="mt-4" onClick={() => navigate('/mapa/transportadores')}>
-                Solicitar Novo Frete
-              </Button>
+              <p className="text-muted-foreground">
+                {filtroStatus === 'todos' ? 'Nenhum frete encontrado.' : `Nenhum frete com status "${filtroStatus}".`}
+              </p>
+              {filtroStatus !== 'todos' && (
+                <Button variant="link" className="mt-2" onClick={() => handleFilterChange('todos')}>
+                  Ver todos os fretes
+                </Button>
+              )}
+              {filtroStatus === 'todos' && (
+                <Button className="mt-4" onClick={() => navigate('/mapa/transportadores')}>
+                  Solicitar Novo Frete
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4">
-            {fretes.map((frete) => (
+            {fretesFiltrados.map((frete) => (
               <Card key={frete.public_id}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
