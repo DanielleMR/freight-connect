@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useSuspensionCheck } from '@/hooks/useSuspensionCheck';
+import { SuspensionBanner } from '@/components/common/SuspensionBanner';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StarRating } from '@/components/ui/star-rating';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck, FileText, CheckCircle, Filter } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Phone, MessageCircle, Star, DollarSign, Truck, FileText, CheckCircle, Filter, AlertTriangle, ShieldBan, Lock } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { FreteTimeline } from '@/components/frete/FreteTimeline';
 
@@ -32,6 +35,7 @@ interface Frete {
   data_prevista: string | null;
   created_at: string;
   produtor_id: string;
+  pagamento_confirmado: boolean;
   contrato_aceito: boolean | null;
   transportadores: {
     id: string;
@@ -51,10 +55,12 @@ export default function Fretes() {
   const [comentario, setComentario] = useState('');
   const [submittingAvaliacao, setSubmittingAvaliacao] = useState(false);
   const [avaliacoesExistentes, setAvaliacoesExistentes] = useState<Set<string>>(new Set());
+  const [fretesComDisputa, setFretesComDisputa] = useState<Set<string>>(new Set());
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtroStatus, setFiltroStatus] = useState<string>(searchParams.get('status') || 'todos');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isSuspended, motivo: suspensionMotivo, suspendedAt } = useSuspensionCheck();
 
   useEffect(() => {
     fetchFretes();
@@ -97,6 +103,20 @@ export default function Fretes() {
         
         if (avaliacoes) {
           setAvaliacoesExistentes(new Set(avaliacoes.map(a => a.frete_id)));
+        }
+      }
+
+      // Fetch disputes for these freights
+      const freteIds = (data || []).map(f => f.id);
+      if (freteIds.length > 0) {
+        const { data: disputas } = await supabase
+          .from('disputas')
+          .select('frete_id')
+          .in('frete_id', freteIds)
+          .in('status', ['aberta', 'em_analise']);
+
+        if (disputas) {
+          setFretesComDisputa(new Set(disputas.map(d => d.frete_id)));
         }
       }
     }
@@ -175,6 +195,11 @@ export default function Fretes() {
           <h1 className="text-2xl font-bold">Meus Fretes</h1>
         </div>
 
+        {/* Suspension banner */}
+        {isSuspended && (
+          <SuspensionBanner motivo={suspensionMotivo} suspendedAt={suspendedAt} />
+        )}
+
         {/* Status filter */}
         <div className="flex items-center gap-3 mb-6">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -228,10 +253,32 @@ export default function Fretes() {
                       </CardTitle>
                       <span className="text-xs text-muted-foreground font-mono">{frete.public_id}</span>
                     </div>
-                    <StatusBadge status={frete.status} />
+                    <div className="flex items-center gap-2">
+                      {fretesComDisputa.has(frete.id) && (
+                        <Badge variant="destructive" className="text-xs gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Disputa
+                        </Badge>
+                      )}
+                      {frete.pagamento_confirmado && (
+                        <Badge variant="outline" className="text-xs gap-1 border-emerald-300 text-emerald-700 dark:text-emerald-400">
+                          <Lock className="h-3 w-3" />
+                          Pago
+                        </Badge>
+                      )}
+                      <StatusBadge status={frete.status} />
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {/* Dispute warning */}
+                  {fretesComDisputa.has(frete.id) && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2 text-xs text-destructive flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                      Este frete possui uma disputa ativa. Algumas ações podem estar bloqueadas.
+                    </div>
+                  )}
+
                   {/* Timeline visual do frete */}
                   <FreteTimeline status={frete.status} contratoAceito={frete.contrato_aceito || false} />
                   

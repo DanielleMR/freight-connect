@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,11 +81,28 @@ const AdminFretes = () => {
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [cancelStep, setCancelStep] = useState<1 | 2>(1);
   const [submitting, setSubmitting] = useState(false);
+  const [fretesComDisputa, setFretesComDisputa] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchFretes();
     fetchTransportadores();
+    fetchDisputas();
   }, []);
+
+  const fetchDisputas = async () => {
+    try {
+      const { data } = await supabase
+        .from("disputas")
+        .select("frete_id")
+        .in("status", ["aberta", "em_analise"]);
+
+      if (data) {
+        setFretesComDisputa(new Set(data.map(d => d.frete_id)));
+      }
+    } catch (err) {
+      console.error("Error fetching disputas:", err);
+    }
+  };
 
   const fetchFretes = async () => {
     try {
@@ -386,7 +404,19 @@ const AdminFretes = () => {
                         </TableCell>
                         <TableCell>{f.transportador?.nome || "-"}</TableCell>
                         <TableCell>
-                          <StatusBadge status={f.status} />
+                          <div className="flex items-center gap-1">
+                            <StatusBadge status={f.status} />
+                            {fretesComDisputa.has(f.id) && (
+                              <Badge variant="destructive" className="text-[10px] px-1 py-0">
+                                Disputa
+                              </Badge>
+                            )}
+                            {f.pagamento_confirmado && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 border-emerald-300 text-emerald-700">
+                                Pago
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{formatDate(f.data_prevista)}</TableCell>
                         <TableCell>
