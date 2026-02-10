@@ -12,6 +12,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { FreteChat } from '@/components/chat/FreteChat';
 import { PagamentoModal } from '@/components/monetizacao/PagamentoModal';
+import { useSuspensionCheck } from '@/hooks/useSuspensionCheck';
+import { SuspensionBanner } from '@/components/common/SuspensionBanner';
 
 interface Contrato {
   id: string;
@@ -71,6 +73,7 @@ export default function ContratoFrete() {
   const [userId, setUserId] = useState<string | null>(null);
   const [showPagamentoModal, setShowPagamentoModal] = useState(false);
   const [temPlanoProAtivo, setTemPlanoProAtivo] = useState(false);
+  const { isSuspended, motivo: suspensionMotivo, suspendedAt } = useSuspensionCheck();
 
   useEffect(() => {
     fetchContrato();
@@ -140,6 +143,10 @@ export default function ContratoFrete() {
   };
 
   const handleIniciarAceite = () => {
+    if (isSuspended) {
+      toast.error('Conta suspensa. Você não pode aceitar contratos.');
+      return;
+    }
     if (!concordo || !freteData) return;
     
     // Se já tem plano Pro, não precisa pagar
@@ -287,6 +294,11 @@ export default function ContratoFrete() {
             )}
           </Badge>
         </div>
+
+        {/* Suspension banner */}
+        {isSuspended && (
+          <SuspensionBanner motivo={suspensionMotivo} suspendedAt={suspendedAt} />
+        )}
 
         {/* Resumo do Frete */}
         <Card>

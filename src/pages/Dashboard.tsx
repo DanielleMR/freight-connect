@@ -3,11 +3,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserCapabilities } from "@/hooks/useUserCapabilities";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
+import { useSuspensionCheck } from "@/hooks/useSuspensionCheck";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { CapabilityToggle } from "@/components/dashboard/CapabilityToggle";
 import { ActivityTimeline } from "@/components/dashboard/ActivityTimeline";
 import { DashboardSummary } from "@/components/dashboard/DashboardSummary";
 import { TermsAcceptanceModal } from "@/components/auth/TermsAcceptanceModal";
+import { SuspensionBanner } from "@/components/common/SuspensionBanner";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { Button } from "@/components/ui/button";
 import { 
@@ -34,6 +36,7 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { capabilities } = useUserCapabilities();
   const { needsAcceptance, recheckTerms } = useTermsAcceptance();
+  const { isSuspended, motivo: suspensionMotivo, suspendedAt } = useSuspensionCheck();
   const { 
     data, 
     loading, 
@@ -118,6 +121,11 @@ const Dashboard = () => {
               onCapabilityChange={setActiveCapability}
             />
           </div>
+
+          {/* Suspension banner */}
+          {isSuspended && (
+            <SuspensionBanner motivo={suspensionMotivo} suspendedAt={suspendedAt} />
+          )}
 
           {/* Page title - Minimal */}
           <div className="mb-8">

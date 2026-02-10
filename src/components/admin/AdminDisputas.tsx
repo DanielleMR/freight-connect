@@ -22,6 +22,11 @@ interface Disputa {
   resolvido_em: string | null;
 }
 
+interface UserDisputeCount {
+  userId: string;
+  count: number;
+}
+
 export const AdminDisputas = () => {
   const [disputas, setDisputas] = useState<Disputa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +35,7 @@ export const AdminDisputas = () => {
   const [resolucao, setResolucao] = useState("");
   const [novoStatus, setNovoStatus] = useState("resolvida");
   const [submitting, setSubmitting] = useState(false);
+  const [reincidentes, setReincidentes] = useState<UserDisputeCount[]>([]);
 
   const fetchDisputas = async () => {
     try {
@@ -40,6 +46,17 @@ export const AdminDisputas = () => {
 
       if (error) throw error;
       setDisputas(data || []);
+
+      // Calculate users with multiple disputes (reincidentes)
+      const userCounts: Record<string, number> = {};
+      (data || []).forEach(d => {
+        userCounts[d.aberto_por] = (userCounts[d.aberto_por] || 0) + 1;
+      });
+      const multi = Object.entries(userCounts)
+        .filter(([, count]) => count >= 2)
+        .map(([userId, count]) => ({ userId, count }))
+        .sort((a, b) => b.count - a.count);
+      setReincidentes(multi);
     } catch (error: any) {
       toast.error("Erro ao carregar disputas");
     } finally {
@@ -127,6 +144,24 @@ export const AdminDisputas = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Reincidentes alert */}
+        {reincidentes.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-400 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Usuários com múltiplas disputas
+            </p>
+            <div className="mt-2 space-y-1">
+              {reincidentes.map(r => (
+                <div key={r.userId} className="flex items-center gap-2 text-xs">
+                  <span className="font-mono text-muted-foreground">{r.userId.slice(0, 12)}...</span>
+                  <Badge variant="destructive" className="text-xs">{r.count} disputas</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <p>Carregando...</p>
         ) : disputas.length === 0 ? (

@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useSuspensionCheck } from '@/hooks/useSuspensionCheck';
+import { SuspensionBanner } from '@/components/common/SuspensionBanner';
 import { ArrowLeft, Calendar, DollarSign, Truck, AlertTriangle, UserPlus, Ruler, Eye } from 'lucide-react';
 import { FreteResumo } from '@/components/frete/FreteResumo';
 
@@ -37,6 +39,7 @@ export default function SolicitarFrete() {
   const { transportadorPublicId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isSuspended, motivo: suspensionMotivo, suspendedAt } = useSuspensionCheck();
   
   const [transportador, setTransportador] = useState<Transportador | null>(null);
   const [transportadorId, setTransportadorId] = useState<string | null>(null);
@@ -90,6 +93,11 @@ export default function SolicitarFrete() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSuspended) {
+      toast({ title: 'Conta suspensa', description: 'Você não pode solicitar fretes enquanto sua conta estiver suspensa.', variant: 'destructive' });
+      return;
+    }
     
     if (!tipoAnimal) {
       toast({ title: 'Erro', description: 'Selecione o tipo de animal', variant: 'destructive' });
@@ -162,6 +170,10 @@ export default function SolicitarFrete() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
+
+        {isSuspended && (
+          <SuspensionBanner motivo={suspensionMotivo} suspendedAt={suspendedAt} />
+        )}
 
         <Card>
           <CardHeader>
