@@ -3,7 +3,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Database } from "@/integrations/supabase/types";
-import { ChevronRight, MapPin } from "lucide-react";
+import { ChevronRight, MapPin, AlertTriangle, ShieldAlert } from "lucide-react";
 
 type FreteStatus = Database['public']['Enums']['frete_status'];
 
@@ -16,6 +16,8 @@ interface ActivityItem {
   createdAt: string;
   animalType?: string | null;
   quantity?: number | null;
+  eventType?: 'frete' | 'disputa' | 'encerramento';
+  eventLabel?: string;
 }
 
 interface ActivityTimelineProps {
@@ -71,7 +73,10 @@ export function ActivityTimeline({
             >
               {/* Timeline indicator */}
               <div className="flex flex-col items-center self-stretch">
-                <div className="w-2 h-2 rounded-full bg-primary/60" />
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  item.eventType === 'disputa' ? "bg-destructive/60" : "bg-primary/60"
+                )} />
                 {index < items.length - 1 && (
                   <div className="w-px flex-1 bg-border mt-1" />
                 )}
@@ -79,6 +84,15 @@ export function ActivityTimeline({
 
               {/* Content */}
               <div className="flex-1 min-w-0">
+                {/* Event label for disputes */}
+                {item.eventType === 'disputa' && item.eventLabel && (
+                  <div className="flex items-center gap-1 mb-1">
+                    <AlertTriangle className="h-3 w-3 text-destructive flex-shrink-0" />
+                    <span className="text-xs font-medium text-destructive truncate">
+                      {item.eventLabel}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mb-1">
                   <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                   <span className="font-medium text-sm truncate">

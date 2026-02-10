@@ -5,9 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { Search, Calendar, User, Database } from "lucide-react";
+import { Search, Calendar, User, Database, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -29,6 +31,12 @@ const acaoColors: Record<string, string> = {
   CREATE: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
   EDIT: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   LOGIN: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  CANCELAMENTO_ADMIN_FRETE: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  FORCAR_ENCERRAMENTO: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  BLOQUEIO_DISPUTA_FRETE: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+  DISPUTA_RESOLVIDA: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+  SUSPENSAO_USUARIO: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  REMOCAO_SUSPENSAO: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
 };
 
 const tabelaLabels: Record<string, string> = {
@@ -37,6 +45,12 @@ const tabelaLabels: Record<string, string> = {
   fretes: "Fretes",
   avaliacoes: "Avaliações",
   user_roles: "Papéis de Usuário",
+  disputas: "Disputas",
+  suspensoes: "Suspensões",
+  aceites_termos: "Aceites de Termos",
+  pagamentos: "Pagamentos",
+  contratos: "Contratos",
+  documentos: "Documentos",
 };
 
 const AdminAuditoria = () => {
@@ -45,6 +59,7 @@ const AdminAuditoria = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTabela, setFilterTabela] = useState<string>("");
   const [filterAcao, setFilterAcao] = useState<string>("");
+  const [detailItem, setDetailItem] = useState<Auditoria | null>(null);
 
   useEffect(() => {
     fetchAuditoria();
@@ -188,9 +203,17 @@ const AdminAuditoria = () => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {item.registro_id ? item.registro_id.slice(0, 8) + "..." : "-"}
-                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDetailItem(item)}
+                          className="gap-1"
+                        >
+                          <Eye className="h-3 w-3" />
+                          <span className="text-xs font-mono">
+                            {item.registro_id ? item.registro_id.slice(0, 8) + "..." : "Ver"}
+                          </span>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -204,6 +227,63 @@ const AdminAuditoria = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!detailItem} onOpenChange={(open) => !open && setDetailItem(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Auditoria</DialogTitle>
+          </DialogHeader>
+          {detailItem && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-muted-foreground">Data/Hora</span>
+                  <p className="font-medium">{formatDate(detailItem.created_at)}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Usuário</span>
+                  <p className="font-medium">{detailItem.user_email || "Sistema"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Ação</span>
+                  <p>
+                    <Badge variant="outline" className={acaoColors[detailItem.acao.toUpperCase()] || ""}>
+                      {detailItem.acao}
+                    </Badge>
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Tabela</span>
+                  <p className="font-medium">{tabelaLabels[detailItem.tabela] || detailItem.tabela}</p>
+                </div>
+              </div>
+              {detailItem.registro_id && (
+                <div>
+                  <span className="text-muted-foreground">Registro ID</span>
+                  <p className="font-mono text-xs bg-muted rounded p-2 mt-1 break-all">{detailItem.registro_id}</p>
+                </div>
+              )}
+              {detailItem.dados_anteriores && (
+                <div>
+                  <span className="text-muted-foreground">Dados Anteriores</span>
+                  <pre className="bg-muted rounded p-3 mt-1 text-xs overflow-auto max-h-[200px] whitespace-pre-wrap">
+                    {JSON.stringify(detailItem.dados_anteriores, null, 2)}
+                  </pre>
+                </div>
+              )}
+              {detailItem.dados_novos && (
+                <div>
+                  <span className="text-muted-foreground">Dados Novos</span>
+                  <pre className="bg-muted rounded p-3 mt-1 text-xs overflow-auto max-h-[200px] whitespace-pre-wrap">
+                    {JSON.stringify(detailItem.dados_novos, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
