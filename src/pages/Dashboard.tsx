@@ -18,7 +18,9 @@ import {
   Clock, 
   Package,
   LogOut,
-  Settings
+  Settings,
+  ShieldCheck,
+  CreditCard
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
@@ -189,16 +191,19 @@ const Dashboard = () => {
                 total={stats.total}
               />
 
-              {/* Future metrics placeholder */}
-              <div className="p-5 rounded-xl border border-dashed border-border bg-muted/30">
-                <p className="text-xs font-medium text-muted-foreground text-center">
-                  Métricas financeiras e SLA
-                </p>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  Em breve
-                </p>
-                {/* Audit hook placeholder */}
-                <div className="hidden" data-audit-hook="future-metrics" />
+              {/* Quick links */}
+              <div className="p-5 rounded-xl border border-border bg-card space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Acesso rápido</p>
+                <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/verificacao-documental')}>
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Verificação Documental
+                </Button>
+                {(activeCapability === 'driver') && (
+                  <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/motorista/financeiro')}>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Financeiro
+                  </Button>
+                )}
               </div>
             </div>
           </div>

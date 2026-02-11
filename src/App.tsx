@@ -36,6 +36,7 @@ import CadastroProdutor from "./pages/cadastro/CadastroProdutor";
 import CadastroMotorista from "./pages/cadastro/CadastroMotorista";
 import CadastroEmpresa from "./pages/cadastro/CadastroEmpresa";
 import Dashboard from "./pages/Dashboard";
+import VerificacaoDocumental from "./pages/VerificacaoDocumental";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,13 @@ const App = () => (
             <Route path="/painel" element={
               <CapabilityGuard requiredCapabilities={['producer', 'driver', 'company_admin']}>
                 <Dashboard />
+              </CapabilityGuard>
+            } />
+            
+            {/* Protected: Document Verification */}
+            <Route path="/verificacao-documental" element={
+              <CapabilityGuard requiredCapabilities={['producer', 'driver', 'company_admin']}>
+                <VerificacaoDocumental />
               </CapabilityGuard>
             } />
             

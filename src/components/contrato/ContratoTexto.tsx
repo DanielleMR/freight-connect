@@ -48,7 +48,7 @@ export function gerarTextoContrato({
   const tipoCobrancaTexto = frete.tipo_cobranca === 'valor_km' ? 'por quilômetro' : 'valor fechado';
 
   return `
-CONTRATO DIGITAL DE PRESTAÇÃO DE SERVIÇO DE TRANSPORTE DE ANIMAIS
+CONTRATO DIGITAL DE INTERMEDIAÇÃO DE FRETE DE ANIMAIS
 Versão ${versao}
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -67,11 +67,20 @@ CPF/CNPJ: ${transportador.cpf_cnpj || 'Não informado'}
 Telefone: ${transportador.telefone}
 Placa do Veículo: ${transportador.placa_veiculo || 'Não informado'}
 
+PLATAFORMA INTERMEDIADORA:
+FreteBoi – Plataforma de Intermediação Digital de Fretes de Animais
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 OBJETO DO CONTRATO
 
-O presente contrato tem por objeto a prestação de serviço de transporte de animais vivos, conforme especificações abaixo:
+O presente contrato regula a intermediação digital entre CONTRATANTE e
+CONTRATADO para a prestação de serviço de transporte de animais vivos.
+
+A PLATAFORMA atua EXCLUSIVAMENTE como intermediadora digital, conectando
+produtores rurais a transportadores independentes. A PLATAFORMA NÃO
+executa, garante, supervisiona ou se responsabiliza pela execução do
+transporte, pela integridade dos animais ou por danos decorrentes do frete.
 
 DETALHES DO FRETE:
 • Origem: ${frete.origem || 'Não informado'}
@@ -84,50 +93,68 @@ ${frete.descricao ? `• Observações: ${frete.descricao}` : ''}
 CONDIÇÕES FINANCEIRAS:
 • Valor do Frete: ${valorFormatado}
 • Tipo de Cobrança: ${tipoCobrancaTexto}
+• Taxa de Intermediação: Conforme faixa aplicável (até R$750: 12%, R$751–R$2.000: 10%, acima de R$2.000: 8%), ou isenta para assinantes PRO.
+• Valor Líquido do Transportador: Calculado após desconto automático da taxa.
 ${frete.valor_contraproposta ? `• Valor Original: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(frete.valor_frete || 0)}` : ''}
 
 ═══════════════════════════════════════════════════════════════════════════════
 
 CLÁUSULAS E CONDIÇÕES
 
-1. INTERMEDIAÇÃO E MONETIZAÇÃO:
-   A intermediação do frete é realizada exclusivamente pela plataforma,
-   sendo devida a taxa conforme modalidade escolhida pelo transportador:
-   - COMISSÃO: 8% sobre o valor do frete, ou
-   - ASSINATURA PRO: Isenção de comissão mediante plano vigente.
+1. NATUREZA DA INTERMEDIAÇÃO:
+   A PLATAFORMA é um serviço de intermediação digital nos termos do Marco
+   Civil da Internet (Lei nº 12.965/2014) e do Código Civil. A plataforma
+   NÃO é transportadora, NÃO se responsabiliza pela execução do frete,
+   NÃO garante a qualidade do serviço prestado pelo transportador e NÃO
+   assume responsabilidade por danos a animais, carga ou terceiros.
+
+2. TAXA DE INTERMEDIAÇÃO:
+   A PLATAFORMA cobra uma taxa de intermediação escalonada:
+   - Fretes de até R$ 750,00: 12% sobre o valor do frete
+   - Fretes de R$ 751,00 a R$ 2.000,00: 10% sobre o valor do frete
+   - Fretes acima de R$ 2.000,00: 8% sobre o valor do frete
+   - ASSINATURA PRO: Isenção total de taxa mediante plano vigente.
    
-   O transportador declara estar ciente de que os dados de contato do
-   produtor somente serão liberados após confirmação do pagamento da
-   comissão ou verificação de assinatura PRO ativa.
+   A taxa é retida automaticamente via split de pagamento no momento da
+   transação. Os dados de contato do produtor somente são liberados após
+   confirmação do pagamento ou verificação de assinatura PRO ativa.
 
-2. RESPONSABILIDADES DO TRANSPORTADOR:
+3. RESPONSABILIDADES DO TRANSPORTADOR:
    a) Garantir o bem-estar dos animais durante todo o trajeto;
-   b) Possuir toda documentação necessária para o transporte (GTA, certificados sanitários);
-   c) Manter o veículo em condições adequadas de higiene e segurança;
+   b) Possuir toda documentação necessária (GTA, certificados sanitários);
+   c) Manter veículo em condições adequadas de higiene e segurança;
    d) Cumprir os prazos acordados, salvo casos de força maior;
-   e) Comunicar imediatamente qualquer intercorrência durante o transporte.
+   e) Comunicar imediatamente qualquer intercorrência.
+   f) A responsabilidade pelo transporte é EXCLUSIVA do transportador.
 
-3. RESPONSABILIDADES DO CONTRATANTE:
-   a) Fornecer toda documentação necessária dos animais (GTA, certificados);
+4. RESPONSABILIDADES DO CONTRATANTE:
+   a) Fornecer documentação necessária dos animais (GTA, certificados);
    b) Garantir que os animais estejam em condições de transporte;
    c) Efetuar o pagamento conforme acordado;
-   d) Providenciar as condições de embarque e desembarque dos animais.
+   d) Providenciar condições de embarque e desembarque.
 
-4. PAGAMENTO:
-   O pagamento deverá ser realizado conforme combinação prévia entre as partes.
+5. LIMITAÇÃO DE RESPONSABILIDADE DA PLATAFORMA:
+   A PLATAFORMA não se responsabiliza por:
+   a) Atrasos, danos ou perdas durante o transporte;
+   b) Veracidade das informações fornecidas pelos usuários;
+   c) Disputas entre CONTRATANTE e CONTRATADO;
+   d) Condições do veículo ou habilitação do transportador;
+   e) Cumprimento de obrigações sanitárias e regulatórias.
+   
+   A PLATAFORMA oferece mecanismo de disputa como facilitadora, sem
+   obrigação de resultado.
 
-5. CANCELAMENTO:
-   Em caso de cancelamento por qualquer das partes, deverá haver comunicação
-   prévia de no mínimo 24 horas. Cancelamentos sem aviso prévio poderão
-   estar sujeitos a multas conforme negociação entre as partes.
+6. CANCELAMENTO:
+   Em caso de cancelamento, comunicação prévia de no mínimo 24 horas.
+   Cancelamentos sem aviso prévio poderão estar sujeitos a restrições
+   na plataforma.
 
-6. FORÇA MAIOR:
-   Nenhuma das partes será responsável por atrasos ou falhas no cumprimento
-   de suas obrigações decorrentes de casos fortuitos ou de força maior.
+7. FORÇA MAIOR:
+   Nenhuma das partes será responsável por atrasos ou falhas decorrentes
+   de casos fortuitos ou de força maior.
 
-7. FORO:
-   Para dirimir quaisquer questões oriundas deste contrato, fica eleito o
-   foro da comarca do local de origem do frete.
+8. FORO:
+   Fica eleito o foro da comarca do local de origem do frete.
 
 ═══════════════════════════════════════════════════════════════════════════════
 
