@@ -193,7 +193,7 @@ export default function TransportadorFinanceiro() {
                   <CardDescription>
                     {isPlanoPro 
                       ? `Válido por mais ${diasRestantes} dias`
-                      : 'Comissão de 8% por frete'}
+                      : 'Comissão escalonada: 12% (até R$750) · 10% (R$751–R$2.000) · 8% (acima de R$2.000)'}
                   </CardDescription>
                 </div>
               </div>
@@ -229,11 +229,23 @@ export default function TransportadorFinanceiro() {
         </Card>
 
         {/* Resumo Financeiro */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Total de Comissões Pagas</CardDescription>
               <CardTitle className="text-2xl">{formatCurrency(totalComissoesPagas)}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Valor Líquido Recebido</CardDescription>
+              <CardTitle className="text-2xl text-emerald-600">
+                {formatCurrency(
+                  pagamentos
+                    .filter(p => p.tipo === 'comissao' && p.status === 'pago')
+                    .reduce((acc, p) => acc + ((p.valor_base || 0) - (p.valor_comissao || 0)), 0)
+                )}
+              </CardTitle>
             </CardHeader>
           </Card>
           <Card>
@@ -253,6 +265,46 @@ export default function TransportadorFinanceiro() {
             </CardHeader>
           </Card>
         </div>
+
+        {/* Commission breakdown per freight */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Detalhamento de Comissões</CardTitle>
+            <CardDescription>Valor total, comissão aplicada e líquido por frete</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {pagamentos.filter(p => p.tipo === 'comissao').length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Nenhuma comissão registrada.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-2 font-medium text-muted-foreground">Frete</th>
+                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Valor Total</th>
+                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Taxa</th>
+                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Comissão</th>
+                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Líquido</th>
+                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagamentos.filter(p => p.tipo === 'comissao').map((p) => (
+                      <tr key={p.id} className="border-b last:border-0">
+                        <td className="py-2 px-2">{p.frete?.public_id || '—'}</td>
+                        <td className="text-right py-2 px-2">{formatCurrency(p.valor_base || 0)}</td>
+                        <td className="text-right py-2 px-2">{p.percentual_comissao}%</td>
+                        <td className="text-right py-2 px-2 text-red-600">-{formatCurrency(p.valor_comissao || 0)}</td>
+                        <td className="text-right py-2 px-2 font-semibold text-emerald-600">{formatCurrency((p.valor_base || 0) - (p.valor_comissao || 0))}</td>
+                        <td className="text-right py-2 px-2">{getStatusBadge(p.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Histórico de Pagamentos */}
         <Card>
