@@ -20,7 +20,8 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
-  CreditCard
+  CreditCard,
+  Shield
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
@@ -197,6 +198,10 @@ const Dashboard = () => {
                 <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/verificacao-documental')}>
                   <ShieldCheck className="h-4 w-4 mr-2" />
                   Verificação Documental
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/seguranca')}>
+                  <Shield className="h-4 w-4 mr-2" />
+                  Segurança da Conta
                 </Button>
                 {(activeCapability === 'driver') && (
                   <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/motorista/financeiro')}>

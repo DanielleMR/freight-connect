@@ -63,7 +63,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { path: "/admin/documentos", label: "Documentos" },
     { path: "/admin/chats", label: "Chats" },
     { path: "/admin/financeiro", label: "Financeiro" },
+    { path: "/admin/emails", label: "Emails" },
     { path: "/admin/auditoria", label: "Auditoria" },
+    { path: "/admin/relatorio", label: "Relatório" },
     { path: "/admin/configuracoes", label: "Config" },
   ];
 

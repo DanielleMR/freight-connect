@@ -366,6 +366,56 @@ export type Database = {
           },
         ]
       }
+      document_verifications: {
+        Row: {
+          comparison_result: Json | null
+          created_at: string
+          document_hash: string | null
+          document_id: string
+          extracted_data: Json | null
+          id: string
+          ip_address: string | null
+          ocr_result: Json | null
+          ocr_service: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          comparison_result?: Json | null
+          created_at?: string
+          document_hash?: string | null
+          document_id: string
+          extracted_data?: Json | null
+          id?: string
+          ip_address?: string | null
+          ocr_result?: Json | null
+          ocr_service?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          comparison_result?: Json | null
+          created_at?: string
+          document_hash?: string | null
+          document_id?: string
+          extracted_data?: Json | null
+          id?: string
+          ip_address?: string | null
+          ocr_result?: Json | null
+          ocr_service?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_verifications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos: {
         Row: {
           aprovado_em: string | null
@@ -468,6 +518,45 @@ export type Database = {
           terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      email_logs: {
+        Row: {
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          recipient: string
+          resend_id: string | null
+          status: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient: string
+          resend_id?: string | null
+          status?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient?: string
+          resend_id?: string | null
+          status?: string
+          subject?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -980,6 +1069,36 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
