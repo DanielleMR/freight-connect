@@ -138,14 +138,44 @@ export default function VerificacaoDocumental() {
       const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(fileName);
 
       const existingDoc = getDocumentoByTipo(currentTipo);
+      let documentId: string | null = null;
+
       if (existingDoc && existingDoc.status === 'pendente') {
         await supabase.from('documentos').update({ arquivo_url: publicUrl, arquivo_nome: file.name, updated_at: new Date().toISOString() }).eq('id', existingDoc.id);
+        documentId = existingDoc.id;
       } else {
-        await supabase.from('documentos').insert({ user_id: user.id, user_tipo: userTipo, tipo_documento: currentTipo, arquivo_url: publicUrl, arquivo_nome: file.name, status: 'pendente' } as any);
+        const { data: newDoc } = await supabase.from('documentos').insert({ user_id: user.id, user_tipo: userTipo, tipo_documento: currentTipo, arquivo_url: publicUrl, arquivo_nome: file.name, status: 'pendente' } as any).select('id').single();
+        documentId = newDoc?.id || null;
       }
 
       toast.success('Documento enviado para análise!');
       await fetchDocumentos();
+
+      // Trigger OCR verification automatically
+      if (documentId && file.type.startsWith('image/')) {
+        toast.info('Iniciando verificação OCR automática...');
+        try {
+          const ocrResponse = await supabase.functions.invoke('ocr-verify', {
+            body: {
+              documentId,
+              imageUrl: publicUrl,
+              tipoDocumento: currentTipo,
+              userId: user.id,
+            },
+          });
+          if (ocrResponse.data?.status) {
+            const statusMap: Record<string, string> = {
+              valido: '✅ Documento válido',
+              divergencia: '⚠️ Divergência detectada – será analisado manualmente',
+              expirado: '⏰ Documento expirado',
+              ilegivel: '❌ Documento ilegível – reenvie com melhor qualidade',
+            };
+            toast.info(statusMap[ocrResponse.data.status] || 'OCR concluído');
+          }
+        } catch {
+          // OCR failure is non-blocking
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao enviar documento');
     } finally {
@@ -331,14 +361,17 @@ export default function VerificacaoDocumental() {
           )}
 
           {/* OCR placeholder info */}
-          <Card className="border-dashed">
+          <Card className="border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/10">
             <CardContent className="pt-6">
               <div className="text-center text-muted-foreground">
                 <ShieldCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm font-medium">Validação OCR</p>
+                <p className="text-sm font-medium">Validação OCR Automatizada</p>
                 <p className="text-xs mt-1">
-                  Os dados dos documentos enviados serão comparados automaticamente com o cadastro. 
-                  Inconsistências serão sinalizadas para revisão manual pelo administrador.
+                  Os documentos enviados são verificados automaticamente via Google Vision API. 
+                  Dados extraídos são comparados com o cadastro para detectar divergências.
+                </p>
+                <p className="text-xs mt-2 italic text-amber-700 dark:text-amber-400">
+                  ⚖️ A verificação documental possui caráter informativo e não constitui certificação integral da idoneidade do transportador.
                 </p>
               </div>
             </CardContent>

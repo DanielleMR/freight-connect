@@ -24,6 +24,8 @@ import AdminChats from "./pages/admin/AdminChats";
 import AdminFinanceiro from "./pages/admin/AdminFinanceiro";
 import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 import AdminOperacoes from "./pages/admin/AdminOperacoes";
+import AdminRelatorioAuditoria from "./pages/admin/AdminRelatorioAuditoria";
+import AdminEmailLogs from "./pages/admin/AdminEmailLogs";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
@@ -37,6 +39,7 @@ import CadastroMotorista from "./pages/cadastro/CadastroMotorista";
 import CadastroEmpresa from "./pages/cadastro/CadastroEmpresa";
 import Dashboard from "./pages/Dashboard";
 import VerificacaoDocumental from "./pages/VerificacaoDocumental";
+import SegurancaConta from "./pages/SegurancaConta";
 
 const queryClient = new QueryClient();
 
@@ -55,12 +58,12 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             
-            {/* New registration routes (public, but require auth first) */}
+            {/* Registration routes */}
             <Route path="/cadastro/produtor" element={<CadastroProdutor />} />
             <Route path="/cadastro/motorista" element={<CadastroMotorista />} />
             <Route path="/cadastro/empresa" element={<CadastroEmpresa />} />
             
-            {/* Legacy routes - redirect to new flow */}
+            {/* Legacy routes */}
             <Route path="/produtor/cadastro" element={<ProdutorCadastro />} />
             <Route path="/transportador/cadastro" element={<TransportadorCadastro />} />
             
@@ -77,8 +80,15 @@ const App = () => (
                 <VerificacaoDocumental />
               </CapabilityGuard>
             } />
+
+            {/* Protected: Account Security */}
+            <Route path="/seguranca" element={
+              <CapabilityGuard requiredCapabilities={['producer', 'driver', 'company_admin']}>
+                <SegurancaConta />
+              </CapabilityGuard>
+            } />
             
-            {/* Protected: Produtor routes (using capabilities) */}
+            {/* Protected: Produtor routes */}
             <Route path="/produtor/painel" element={
               <CapabilityGuard requiredCapabilities={['producer']}>
                 <ProdutorPainel />
@@ -95,7 +105,7 @@ const App = () => (
               </CapabilityGuard>
             } />
 
-            {/* Protected: Driver routes (using capabilities) */}
+            {/* Protected: Driver routes */}
             <Route path="/motorista/painel" element={
               <CapabilityGuard requiredCapabilities={['driver']}>
                 <TransportadorPainel />
@@ -107,7 +117,7 @@ const App = () => (
               </CapabilityGuard>
             } />
             
-            {/* Legacy transportador routes - also map to driver */}
+            {/* Legacy transportador routes */}
             <Route path="/transportador/painel" element={
               <RouteGuard allowedRoles={['transportador']}>
                 <TransportadorPainel />
@@ -131,62 +141,20 @@ const App = () => (
               </CapabilityGuard>
             } />
 
-            {/* Protected: Admin routes (using roles) */}
-            <Route path="/admin/transportadores" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminTransportadores />
-              </RouteGuard>
-            } />
-            <Route path="/admin/transportadores/novo" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminTransportadorNovo />
-              </RouteGuard>
-            } />
-            <Route path="/admin/produtores" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminProdutores />
-              </RouteGuard>
-            } />
-            <Route path="/admin/fretes" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminFretes />
-              </RouteGuard>
-            } />
-            <Route path="/admin/contratos" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminContratos />
-              </RouteGuard>
-            } />
-            <Route path="/admin/documentos" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminDocumentos />
-              </RouteGuard>
-            } />
-            <Route path="/admin/chats" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminChats />
-              </RouteGuard>
-            } />
-            <Route path="/admin/financeiro" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminFinanceiro />
-              </RouteGuard>
-            } />
-            <Route path="/admin/auditoria" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminAuditoria />
-              </RouteGuard>
-            } />
-            <Route path="/admin/configuracoes" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminConfiguracoes />
-              </RouteGuard>
-            } />
-            <Route path="/admin/operacoes" element={
-              <RouteGuard allowedRoles={['admin']}>
-                <AdminOperacoes />
-              </RouteGuard>
-            } />
+            {/* Protected: Admin routes */}
+            <Route path="/admin/transportadores" element={<RouteGuard allowedRoles={['admin']}><AdminTransportadores /></RouteGuard>} />
+            <Route path="/admin/transportadores/novo" element={<RouteGuard allowedRoles={['admin']}><AdminTransportadorNovo /></RouteGuard>} />
+            <Route path="/admin/produtores" element={<RouteGuard allowedRoles={['admin']}><AdminProdutores /></RouteGuard>} />
+            <Route path="/admin/fretes" element={<RouteGuard allowedRoles={['admin']}><AdminFretes /></RouteGuard>} />
+            <Route path="/admin/contratos" element={<RouteGuard allowedRoles={['admin']}><AdminContratos /></RouteGuard>} />
+            <Route path="/admin/documentos" element={<RouteGuard allowedRoles={['admin']}><AdminDocumentos /></RouteGuard>} />
+            <Route path="/admin/chats" element={<RouteGuard allowedRoles={['admin']}><AdminChats /></RouteGuard>} />
+            <Route path="/admin/financeiro" element={<RouteGuard allowedRoles={['admin']}><AdminFinanceiro /></RouteGuard>} />
+            <Route path="/admin/auditoria" element={<RouteGuard allowedRoles={['admin']}><AdminAuditoria /></RouteGuard>} />
+            <Route path="/admin/configuracoes" element={<RouteGuard allowedRoles={['admin']}><AdminConfiguracoes /></RouteGuard>} />
+            <Route path="/admin/operacoes" element={<RouteGuard allowedRoles={['admin']}><AdminOperacoes /></RouteGuard>} />
+            <Route path="/admin/relatorio" element={<RouteGuard allowedRoles={['admin']}><AdminRelatorioAuditoria /></RouteGuard>} />
+            <Route path="/admin/emails" element={<RouteGuard allowedRoles={['admin']}><AdminEmailLogs /></RouteGuard>} />
             
             {/* Fallback */}
             <Route path="*" element={<NotFound />} />
