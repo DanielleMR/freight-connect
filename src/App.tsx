@@ -26,6 +26,7 @@ import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 import AdminOperacoes from "./pages/admin/AdminOperacoes";
 import AdminRelatorioAuditoria from "./pages/admin/AdminRelatorioAuditoria";
 import AdminEmailLogs from "./pages/admin/AdminEmailLogs";
+import AdminDenuncias from "./pages/admin/AdminDenuncias";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
@@ -155,6 +156,7 @@ const App = () => (
             <Route path="/admin/operacoes" element={<RouteGuard allowedRoles={['admin']}><AdminOperacoes /></RouteGuard>} />
             <Route path="/admin/relatorio" element={<RouteGuard allowedRoles={['admin']}><AdminRelatorioAuditoria /></RouteGuard>} />
             <Route path="/admin/emails" element={<RouteGuard allowedRoles={['admin']}><AdminEmailLogs /></RouteGuard>} />
+            <Route path="/admin/denuncias" element={<RouteGuard allowedRoles={['admin']}><AdminDenuncias /></RouteGuard>} />
             
             {/* Fallback */}
             <Route path="*" element={<NotFound />} />

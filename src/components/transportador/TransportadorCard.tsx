@@ -2,9 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Truck, MapPin, Crown } from "lucide-react";
+import ReportUserButton from "@/components/reports/ReportUserButton";
 
 interface Transportador {
   id: string;
+  user_id?: string | null;
   nome: string;
   tipo_animal: string | null;
   regiao_atendimento: string | null;
@@ -88,14 +90,23 @@ const TransportadorCard = ({ transportador: t, onSelect }: TransportadorCardProp
           </div>
         </div>
 
-        <Button 
-          className="w-full mt-4" 
-          size="sm"
-          onClick={onSelect}
-          disabled={!t.ativo}
-        >
-          Solicitar Frete
-        </Button>
+        <div className="flex items-center gap-2 mt-4">
+          <Button 
+            className="flex-1" 
+            size="sm"
+            onClick={onSelect}
+            disabled={!t.ativo}
+          >
+            Solicitar Frete
+          </Button>
+          {t.user_id && (
+            <ReportUserButton
+              reportedUserId={t.user_id}
+              reportedUserName={t.nome}
+              size="sm"
+            />
+          )}
+        </div>
       </CardContent>
     </Card>
   );

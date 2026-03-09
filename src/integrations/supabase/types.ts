@@ -1072,6 +1072,54 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          evidence_name: string | null
+          evidence_url: string | null
+          id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          evidence_name?: string | null
+          evidence_url?: string | null
+          id?: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          evidence_name?: string | null
+          evidence_url?: string | null
+          id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reported_user_id?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_logs: {
         Row: {
           created_at: string
@@ -1680,6 +1728,13 @@ export type Database = {
         | "concluido"
       pagamento_status: "pendente" | "pago" | "cancelado"
       plano_tipo: "free" | "pro"
+      report_reason:
+        | "fraude"
+        | "comportamento_inadequado"
+        | "dados_falsos"
+        | "golpe"
+        | "outro"
+      report_status: "pendente" | "em_analise" | "resolvido"
       user_capability: "producer" | "driver" | "company_admin"
       vehicle_type: "truck" | "carreta" | "bitruck" | "romeu_julieta"
     }
@@ -1835,6 +1890,14 @@ export const Constants = {
       ],
       pagamento_status: ["pendente", "pago", "cancelado"],
       plano_tipo: ["free", "pro"],
+      report_reason: [
+        "fraude",
+        "comportamento_inadequado",
+        "dados_falsos",
+        "golpe",
+        "outro",
+      ],
+      report_status: ["pendente", "em_analise", "resolvido"],
       user_capability: ["producer", "driver", "company_admin"],
       vehicle_type: ["truck", "carreta", "bitruck", "romeu_julieta"],
     },
