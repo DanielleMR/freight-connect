@@ -50,12 +50,10 @@ export function useUserCapabilities(): UseUserCapabilitiesReturn {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
-        .from('user_capabilities')
-        .insert({
-          user_id: user.id,
-          capability: cap
-        });
+      const { error } = await supabase.rpc('assign_capability_securely', {
+        p_user_id: user.id,
+        p_capability: cap
+      });
 
       if (error) throw error;
       
