@@ -6,6 +6,7 @@ import ReportUserButton from "@/components/reports/ReportUserButton";
 
 interface Transportador {
   id: string;
+  user_id?: string | null;
   nome: string;
   tipo_animal: string | null;
   regiao_atendimento: string | null;
