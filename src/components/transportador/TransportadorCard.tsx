@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Truck, MapPin, Crown } from "lucide-react";
+import ReportUserButton from "@/components/reports/ReportUserButton";
 
 interface Transportador {
   id: string;
