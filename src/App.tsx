@@ -26,6 +26,7 @@ import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 import AdminOperacoes from "./pages/admin/AdminOperacoes";
 import AdminRelatorioAuditoria from "./pages/admin/AdminRelatorioAuditoria";
 import AdminEmailLogs from "./pages/admin/AdminEmailLogs";
+import AdminDenuncias from "./pages/admin/AdminDenuncias";
 import ProdutorCadastro from "./pages/produtor/ProdutorCadastro";
 import ProdutorPainel from "./pages/produtor/ProdutorPainel";
 import TransportadorCadastro from "./pages/transportador/TransportadorCadastro";
