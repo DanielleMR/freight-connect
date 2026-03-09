@@ -90,14 +90,23 @@ const TransportadorCard = ({ transportador: t, onSelect }: TransportadorCardProp
           </div>
         </div>
 
-        <Button 
-          className="w-full mt-4" 
-          size="sm"
-          onClick={onSelect}
-          disabled={!t.ativo}
-        >
-          Solicitar Frete
-        </Button>
+        <div className="flex items-center gap-2 mt-4">
+          <Button 
+            className="flex-1" 
+            size="sm"
+            onClick={onSelect}
+            disabled={!t.ativo}
+          >
+            Solicitar Frete
+          </Button>
+          {t.user_id && (
+            <ReportUserButton
+              reportedUserId={t.user_id}
+              reportedUserName={t.nome}
+              size="sm"
+            />
+          )}
+        </div>
       </CardContent>
     </Card>
   );

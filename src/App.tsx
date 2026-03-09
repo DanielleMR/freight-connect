@@ -156,6 +156,7 @@ const App = () => (
             <Route path="/admin/operacoes" element={<RouteGuard allowedRoles={['admin']}><AdminOperacoes /></RouteGuard>} />
             <Route path="/admin/relatorio" element={<RouteGuard allowedRoles={['admin']}><AdminRelatorioAuditoria /></RouteGuard>} />
             <Route path="/admin/emails" element={<RouteGuard allowedRoles={['admin']}><AdminEmailLogs /></RouteGuard>} />
+            <Route path="/admin/denuncias" element={<RouteGuard allowedRoles={['admin']}><AdminDenuncias /></RouteGuard>} />
             
             {/* Fallback */}
             <Route path="*" element={<NotFound />} />
