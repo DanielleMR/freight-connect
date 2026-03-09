@@ -1479,6 +1479,20 @@ export type Database = {
       }
     }
     Functions: {
+      assign_capability_securely: {
+        Args: {
+          p_capability: Database["public"]["Enums"]["user_capability"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      assign_role_securely: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       atribuir_role_usuario: {
         Args: {
           p_role: Database["public"]["Enums"]["app_role"]
