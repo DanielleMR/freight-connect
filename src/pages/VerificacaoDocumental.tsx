@@ -132,20 +132,20 @@ export default function VerificacaoDocumental() {
 
     setUploading(currentTipo);
     try {
-      const fileName = `${user.id}/${currentTipo}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileName = getStoragePath(user.id, currentTipo, file.name);
       const { error: uploadError } = await supabase.storage.from('documentos').upload(fileName, file);
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(fileName);
+      const storagePath = fileName;
 
       const existingDoc = getDocumentoByTipo(currentTipo);
       let documentId: string | null = null;
 
       if (existingDoc && existingDoc.status === 'pendente') {
-        await supabase.from('documentos').update({ arquivo_url: publicUrl, arquivo_nome: file.name, updated_at: new Date().toISOString() }).eq('id', existingDoc.id);
+        await supabase.from('documentos').update({ arquivo_url: storagePath, arquivo_nome: file.name, updated_at: new Date().toISOString() }).eq('id', existingDoc.id);
         documentId = existingDoc.id;
       } else {
-        const { data: newDoc } = await supabase.from('documentos').insert({ user_id: user.id, user_tipo: userTipo, tipo_documento: currentTipo, arquivo_url: publicUrl, arquivo_nome: file.name, status: 'pendente' } as any).select('id').single();
+        const { data: newDoc } = await supabase.from('documentos').insert({ user_id: user.id, user_tipo: userTipo, tipo_documento: currentTipo, arquivo_url: storagePath, arquivo_nome: file.name, status: 'pendente' } as any).select('id').single();
         documentId = newDoc?.id || null;
       }
 
