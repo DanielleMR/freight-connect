@@ -22,6 +22,7 @@ import {
   User
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { getSignedUrl, getStoragePath } from '@/lib/signed-url';
 
 type DocumentoTipo = 'cpf_cnpj' | 'documento_pessoal' | 'cnh' | 'crlv' | 'documento_veiculo';
 type DocumentoStatus = 'pendente' | 'aprovado' | 'reprovado';
