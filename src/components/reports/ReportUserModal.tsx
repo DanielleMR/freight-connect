@@ -72,8 +72,8 @@ export default function ReportUserModal({ open, onOpenChange, reportedUserId, re
         const { error: uploadErr } = await supabase.storage.from('documentos').upload(path, evidenceFile);
         if (uploadErr) throw uploadErr;
 
-        const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(path);
-        evidenceUrl = publicUrl;
+        // Store the path for admin to generate signed URLs
+        evidenceUrl = path;
         evidenceName = evidenceFile.name;
       }
 

@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { Tractor, Truck, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { getUserRolesByUserId, AppRole } from '@/hooks/useUserRole';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 type UserType = 'produtor' | 'transportador';
 
@@ -82,6 +83,15 @@ export default function Auth() {
     setRoleError(null);
 
     try {
+      // Rate limit check
+      const ip = 'client'; // IP-based limiting happens server-side
+      const rateLimitResult = await checkRateLimit('login', ip);
+      if (!rateLimitResult.allowed) {
+        toast.error(rateLimitResult.error || 'Muitas tentativas. Aguarde.');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,

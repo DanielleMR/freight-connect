@@ -22,6 +22,7 @@ import {
   User
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { getSignedUrl, getStoragePath } from '@/lib/signed-url';
 
 type DocumentoTipo = 'cpf_cnpj' | 'documento_pessoal' | 'cnh' | 'crlv' | 'documento_veiculo';
 type DocumentoStatus = 'pendente' | 'aprovado' | 'reprovado';
@@ -131,20 +132,20 @@ export default function VerificacaoDocumental() {
 
     setUploading(currentTipo);
     try {
-      const fileName = `${user.id}/${currentTipo}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileName = getStoragePath(user.id, currentTipo, file.name);
       const { error: uploadError } = await supabase.storage.from('documentos').upload(fileName, file);
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(fileName);
+      const storagePath = fileName;
 
       const existingDoc = getDocumentoByTipo(currentTipo);
       let documentId: string | null = null;
 
       if (existingDoc && existingDoc.status === 'pendente') {
-        await supabase.from('documentos').update({ arquivo_url: publicUrl, arquivo_nome: file.name, updated_at: new Date().toISOString() }).eq('id', existingDoc.id);
+        await supabase.from('documentos').update({ arquivo_url: storagePath, arquivo_nome: file.name, updated_at: new Date().toISOString() }).eq('id', existingDoc.id);
         documentId = existingDoc.id;
       } else {
-        const { data: newDoc } = await supabase.from('documentos').insert({ user_id: user.id, user_tipo: userTipo, tipo_documento: currentTipo, arquivo_url: publicUrl, arquivo_nome: file.name, status: 'pendente' } as any).select('id').single();
+        const { data: newDoc } = await supabase.from('documentos').insert({ user_id: user.id, user_tipo: userTipo, tipo_documento: currentTipo, arquivo_url: storagePath, arquivo_nome: file.name, status: 'pendente' } as any).select('id').single();
         documentId = newDoc?.id || null;
       }
 
@@ -155,10 +156,11 @@ export default function VerificacaoDocumental() {
       if (documentId && file.type.startsWith('image/')) {
         toast.info('Iniciando verificação OCR automática...');
         try {
+          const signedUrl = await getSignedUrl('documentos', storagePath, 300);
           const ocrResponse = await supabase.functions.invoke('ocr-verify', {
             body: {
               documentId,
-              imageUrl: publicUrl,
+              imageUrl: signedUrl || storagePath,
               tipoDocumento: currentTipo,
               userId: user.id,
             },
@@ -280,10 +282,17 @@ export default function VerificacaoDocumental() {
                         </div>
                         <p className="text-sm text-muted-foreground">{docInfo.descricao}</p>
                         {doc?.arquivo_nome && (
-                          <a href={doc.arquivo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline mt-1 flex items-center gap-1">
+                          <button
+                            onClick={async () => {
+                              const url = await getSignedUrl('documentos', doc.arquivo_url);
+                              if (url) window.open(url, '_blank');
+                              else toast.error('Erro ao gerar link do documento');
+                            }}
+                            className="text-xs text-primary underline mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+                          >
                             {doc.arquivo_nome.endsWith('.pdf') ? <FileText className="h-3 w-3" /> : <Image className="h-3 w-3" />}
                             Ver arquivo enviado
-                          </a>
+                          </button>
                         )}
                         {doc?.status === 'reprovado' && doc.motivo_reprovacao && (
                           <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/40 rounded text-sm text-red-600 flex items-start gap-2">

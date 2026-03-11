@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Upload, FileText, CheckCircle, XCircle, Clock, AlertTriangle, Image } from 'lucide-react';
+import { getSignedUrl, getStoragePath } from '@/lib/signed-url';
 
 type DocumentoTipo = 'cpf_cnpj' | 'documento_pessoal' | 'cnh' | 'crlv' | 'documento_veiculo';
 type DocumentoStatus = 'pendente' | 'aprovado' | 'reprovado';
@@ -96,7 +97,7 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
 
     try {
       // Upload para storage
-      const fileName = `${userId}/${currentTipo}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileName = getStoragePath(userId, currentTipo, file.name);
       
       const { error: uploadError } = await supabase.storage
         .from('documentos')
@@ -104,19 +105,17 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(fileName);
+      // Store the path, not a public URL - use signed URLs for viewing
+      const storagePath = fileName;
 
       // Verificar se já existe documento desse tipo
       const existingDoc = getDocumentoByTipo(currentTipo);
 
       if (existingDoc && existingDoc.status === 'pendente') {
-        // Atualizar documento existente
         const { error } = await supabase
           .from('documentos')
           .update({
-            arquivo_url: publicUrl,
+            arquivo_url: storagePath,
             arquivo_nome: file.name,
             updated_at: new Date().toISOString()
           })
@@ -124,14 +123,13 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
 
         if (error) throw error;
       } else {
-        // Inserir novo documento
         const { error } = await supabase
           .from('documentos')
           .insert({
             user_id: userId,
             user_tipo: userTipo,
             tipo_documento: currentTipo,
-            arquivo_url: publicUrl,
+            arquivo_url: storagePath,
             arquivo_nome: file.name,
             status: 'pendente'
           } as any);
@@ -224,11 +222,13 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
                   <p className="text-sm text-muted-foreground">{docInfo.descricao}</p>
                   
                   {documento?.arquivo_nome && (
-                    <a 
-                      href={documento.arquivo_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline mt-1 flex items-center gap-1"
+                    <button 
+                      onClick={async () => {
+                        const url = await getSignedUrl('documentos', documento.arquivo_url);
+                        if (url) window.open(url, '_blank');
+                        else toast.error('Erro ao gerar link do documento');
+                      }}
+                      className="text-xs text-primary underline mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
                     >
                       {documento.arquivo_nome.endsWith('.pdf') ? (
                         <FileText className="h-3 w-3" />
@@ -236,7 +236,7 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
                         <Image className="h-3 w-3" />
                       )}
                       Ver arquivo enviado
-                    </a>
+                    </button>
                   )}
                   
                   {documento?.status === 'reprovado' && documento.motivo_reprovacao && (
