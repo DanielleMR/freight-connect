@@ -156,10 +156,11 @@ export default function VerificacaoDocumental() {
       if (documentId && file.type.startsWith('image/')) {
         toast.info('Iniciando verificação OCR automática...');
         try {
+          const signedUrl = await getSignedUrl('documentos', storagePath, 300);
           const ocrResponse = await supabase.functions.invoke('ocr-verify', {
             body: {
               documentId,
-              imageUrl: publicUrl,
+              imageUrl: signedUrl || storagePath,
               tipoDocumento: currentTipo,
               userId: user.id,
             },
