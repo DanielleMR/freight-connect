@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { Tractor, Truck, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { getUserRolesByUserId, AppRole } from '@/hooks/useUserRole';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 type UserType = 'produtor' | 'transportador';
 
