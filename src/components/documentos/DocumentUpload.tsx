@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Upload, FileText, CheckCircle, XCircle, Clock, AlertTriangle, Image } from 'lucide-react';
+import { getSignedUrl, getStoragePath } from '@/lib/signed-url';
 
 type DocumentoTipo = 'cpf_cnpj' | 'documento_pessoal' | 'cnh' | 'crlv' | 'documento_veiculo';
 type DocumentoStatus = 'pendente' | 'aprovado' | 'reprovado';
