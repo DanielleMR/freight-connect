@@ -282,10 +282,17 @@ export default function VerificacaoDocumental() {
                         </div>
                         <p className="text-sm text-muted-foreground">{docInfo.descricao}</p>
                         {doc?.arquivo_nome && (
-                          <a href={doc.arquivo_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline mt-1 flex items-center gap-1">
+                          <button
+                            onClick={async () => {
+                              const url = await getSignedUrl('documentos', doc.arquivo_url);
+                              if (url) window.open(url, '_blank');
+                              else toast.error('Erro ao gerar link do documento');
+                            }}
+                            className="text-xs text-primary underline mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+                          >
                             {doc.arquivo_nome.endsWith('.pdf') ? <FileText className="h-3 w-3" /> : <Image className="h-3 w-3" />}
                             Ver arquivo enviado
-                          </a>
+                          </button>
                         )}
                         {doc?.status === 'reprovado' && doc.motivo_reprovacao && (
                           <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/40 rounded text-sm text-red-600 flex items-start gap-2">

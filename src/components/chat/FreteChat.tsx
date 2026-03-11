@@ -109,11 +109,8 @@ export function FreteChat({ freteId, fretePublicId, currentUserId, currentUserTy
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('chat-anexos')
-          .getPublicUrl(fileName);
-
-        arquivoUrl = publicUrl;
+        // Store the path - signed URLs generated on display
+        arquivoUrl = fileName;
         arquivoTipo = selectedFile.type.startsWith('image/') ? 'image' : 'pdf';
         setUploading(false);
       }
