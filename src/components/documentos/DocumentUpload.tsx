@@ -97,7 +97,7 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
 
     try {
       // Upload para storage
-      const fileName = `${userId}/${currentTipo}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const fileName = getStoragePath(userId, currentTipo, file.name);
       
       const { error: uploadError } = await supabase.storage
         .from('documentos')
@@ -105,9 +105,8 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(fileName);
+      // Store the path, not a public URL - use signed URLs for viewing
+      const storagePath = fileName;
 
       // Verificar se já existe documento desse tipo
       const existingDoc = getDocumentoByTipo(currentTipo);
