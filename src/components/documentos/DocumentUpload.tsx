@@ -222,11 +222,13 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
                   <p className="text-sm text-muted-foreground">{docInfo.descricao}</p>
                   
                   {documento?.arquivo_nome && (
-                    <a 
-                      href={documento.arquivo_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline mt-1 flex items-center gap-1"
+                    <button 
+                      onClick={async () => {
+                        const url = await getSignedUrl('documentos', documento.arquivo_url);
+                        if (url) window.open(url, '_blank');
+                        else toast.error('Erro ao gerar link do documento');
+                      }}
+                      className="text-xs text-primary underline mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
                     >
                       {documento.arquivo_nome.endsWith('.pdf') ? (
                         <FileText className="h-3 w-3" />
@@ -234,7 +236,7 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
                         <Image className="h-3 w-3" />
                       )}
                       Ver arquivo enviado
-                    </a>
+                    </button>
                   )}
                   
                   {documento?.status === 'reprovado' && documento.motivo_reprovacao && (
