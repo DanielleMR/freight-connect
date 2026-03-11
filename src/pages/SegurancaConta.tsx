@@ -240,7 +240,105 @@ export default function SegurancaConta() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Delete Account - LGPD */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
+                Excluir Minha Conta
+              </CardTitle>
+              <CardDescription>
+                Direito ao esquecimento (LGPD Art. 18). Esta ação é irreversível.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Ao excluir sua conta, todos os seus dados pessoais serão apagados permanentemente:
+                  documentos, telefone, endereço, mensagens e histórico. Registros financeiros serão
+                  mantidos conforme exigência legal.
+                </AlertDescription>
+              </Alert>
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteModalOpen(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir minha conta permanentemente
+              </Button>
+            </CardContent>
+          </Card>
         </main>
+
+        {/* Delete Account Confirmation Modal */}
+        <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive flex items-center gap-2">
+                <Trash2 className="h-5 w-5" />
+                Confirmar Exclusão de Conta
+              </DialogTitle>
+              <DialogDescription>
+                Esta ação é irreversível. Todos os seus dados pessoais serão apagados.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="delete-password">Confirme sua senha</Label>
+                <Input
+                  id="delete-password"
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Digite sua senha atual"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="delete-confirm">
+                  Digite <strong>EXCLUIR</strong> para confirmar
+                </Label>
+                <Input
+                  id="delete-confirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="EXCLUIR"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={deleting || !deletePassword || deleteConfirmText !== 'EXCLUIR'}
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke('delete-account', {
+                      body: { password: deletePassword },
+                    });
+
+                    if (error) throw error;
+                    if (!data?.success) throw new Error(data?.error || 'Erro ao excluir conta');
+
+                    toast.success('Conta excluída com sucesso. Você será redirecionado.');
+                    await supabase.auth.signOut();
+                    navigate('/');
+                  } catch (err: any) {
+                    toast.error(err.message || 'Erro ao excluir conta');
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+              >
+                {deleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );
