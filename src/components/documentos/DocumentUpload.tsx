@@ -112,11 +112,10 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
       const existingDoc = getDocumentoByTipo(currentTipo);
 
       if (existingDoc && existingDoc.status === 'pendente') {
-        // Atualizar documento existente
         const { error } = await supabase
           .from('documentos')
           .update({
-            arquivo_url: publicUrl,
+            arquivo_url: storagePath,
             arquivo_nome: file.name,
             updated_at: new Date().toISOString()
           })
@@ -124,14 +123,13 @@ export function DocumentUpload({ userId, userTipo, documentos, onDocumentUploade
 
         if (error) throw error;
       } else {
-        // Inserir novo documento
         const { error } = await supabase
           .from('documentos')
           .insert({
             user_id: userId,
             user_tipo: userTipo,
             tipo_documento: currentTipo,
-            arquivo_url: publicUrl,
+            arquivo_url: storagePath,
             arquivo_nome: file.name,
             status: 'pendente'
           } as any);
