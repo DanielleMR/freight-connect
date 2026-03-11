@@ -83,6 +83,15 @@ export default function Auth() {
     setRoleError(null);
 
     try {
+      // Rate limit check
+      const ip = 'client'; // IP-based limiting happens server-side
+      const rateLimitResult = await checkRateLimit('login', ip);
+      if (!rateLimitResult.allowed) {
+        toast.error(rateLimitResult.error || 'Muitas tentativas. Aguarde.');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
