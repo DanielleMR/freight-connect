@@ -1072,6 +1072,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          id: string
+          key: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           admin_notes: string | null
@@ -1574,6 +1595,15 @@ export type Database = {
           valor_comissao: number
         }[]
       }
+      check_rate_limit: {
+        Args: {
+          p_key: string
+          p_max_requests: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       confirmar_pagamento: {
         Args: { p_pagamento_id: string }
         Returns: boolean
@@ -1601,6 +1631,7 @@ export type Database = {
         }
         Returns: string
       }
+      delete_user_data: { Args: { p_user_id: string }; Returns: boolean }
       driver_can_accept_freight: {
         Args: { _driver_id: string }
         Returns: boolean
