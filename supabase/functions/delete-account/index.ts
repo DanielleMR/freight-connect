@@ -24,21 +24,22 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify user
+    // Verify user with getUser (correct Supabase JS v2 method)
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+
+    if (userError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const userId = claimsData.claims.sub as string;
+    const userId = user.id;
+    const userEmail = user.email;
     const { password } = await req.json();
 
     if (!password) {
@@ -49,7 +50,13 @@ Deno.serve(async (req) => {
     }
 
     // Verify password by attempting sign-in
-    const userEmail = claimsData.claims.email as string;
+    if (!userEmail) {
+      return new Response(
+        JSON.stringify({ error: "Email do usuário não encontrado" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const { error: signInError } = await supabaseAuth.auth.signInWithPassword({
       email: userEmail,
       password,
@@ -67,14 +74,19 @@ Deno.serve(async (req) => {
     // 1. Delete storage files
     const buckets = ["documentos", "chat-anexos"];
     for (const bucket of buckets) {
-      const { data: files } = await supabase.storage.from(bucket).list(userId);
-      if (files && files.length > 0) {
-        const paths = files.map((f) => `${userId}/${f.name}`);
-        await supabase.storage.from(bucket).remove(paths);
+      try {
+        const { data: files } = await supabase.storage.from(bucket).list(userId);
+        if (files && files.length > 0) {
+          const paths = files.map((f) => `${userId}/${f.name}`);
+          await supabase.storage.from(bucket).remove(paths);
+        }
+      } catch (storageErr) {
+        // Log but continue - data anonymization is more important
+        console.error(`Storage cleanup error for ${bucket}:`, (storageErr as Error).message);
       }
     }
 
-    // 2. Run database anonymization
+    // 2. Run database anonymization via security definer function
     const { error: deleteError } = await supabase.rpc("delete_user_data", {
       p_user_id: userId,
     });
@@ -98,8 +110,9 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, message: "Conta excluída com sucesso" }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
-  } catch (error: any) {
-    console.error("Delete account error:", error.message);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : "Unknown error";
+    console.error("Delete account error:", errMsg);
     return new Response(
       JSON.stringify({ error: "Erro interno ao processar exclusão" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
