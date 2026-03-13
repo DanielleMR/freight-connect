@@ -53,6 +53,7 @@ const AdminOperacoes = lazy(() => import("./pages/admin/AdminOperacoes"));
 const AdminRelatorioAuditoria = lazy(() => import("./pages/admin/AdminRelatorioAuditoria"));
 const AdminEmailLogs = lazy(() => import("./pages/admin/AdminEmailLogs"));
 const AdminDenuncias = lazy(() => import("./pages/admin/AdminDenuncias"));
+const FretesDisponiveis = lazy(() => import("./pages/FretesDisponiveis"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +86,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/transportadores" element={<Transportadores />} />
+              <Route path="/fretes-disponiveis" element={<FretesDisponiveis />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               
