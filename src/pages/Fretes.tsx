@@ -334,7 +334,7 @@ export default function Fretes() {
                           </DialogHeader>
                           <div className="space-y-4 pt-4">
                             <div className="text-center">
-                              <StarRating value={nota} onChange={setNota} size={32} />
+                              <StarRating rating={nota} onChange={setNota} size="lg" interactive />
                               <p className="text-sm text-muted-foreground mt-1">{nota}/5 estrelas</p>
                             </div>
                             <div>
