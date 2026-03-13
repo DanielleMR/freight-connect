@@ -53,6 +53,7 @@ const AdminOperacoes = lazy(() => import("./pages/admin/AdminOperacoes"));
 const AdminRelatorioAuditoria = lazy(() => import("./pages/admin/AdminRelatorioAuditoria"));
 const AdminEmailLogs = lazy(() => import("./pages/admin/AdminEmailLogs"));
 const AdminDenuncias = lazy(() => import("./pages/admin/AdminDenuncias"));
+const FretesDisponiveis = lazy(() => import("./pages/FretesDisponiveis"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
