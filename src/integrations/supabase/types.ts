@@ -1658,6 +1658,20 @@ export type Database = {
           valor_frete: number
         }[]
       }
+      get_fretes_disponiveis: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          created_at: string
+          data_prevista: string
+          destino: string
+          origem: string
+          public_id: string
+          quantidade_animais: number
+          status: string
+          tipo_animal: string
+          total_count: number
+        }[]
+      }
       get_produtor_name: { Args: { produtor_uuid: string }; Returns: string }
       get_transportador_by_public_id: {
         Args: { p_public_id: string }
@@ -1670,6 +1684,15 @@ export type Database = {
           regiao_atendimento: string
           tipo_animal: string
           tipo_caminhao: string
+        }[]
+      }
+      get_transportador_reputacao: {
+        Args: { p_transportador_id: string }
+        Returns: {
+          docs_verificados: boolean
+          media_nota: number
+          total_avaliacoes: number
+          total_fretes_concluidos: number
         }[]
       }
       get_transportadores_directory: {
@@ -1685,6 +1708,35 @@ export type Database = {
           regiao_atendimento: string
           tipo_animal: string
           tipo_caminhao: string
+        }[]
+      }
+      get_transportadores_directory_v2: {
+        Args: {
+          p_avaliacao_min?: number
+          p_capacidade_min?: number
+          p_limit?: number
+          p_offset?: number
+          p_regiao?: string
+          p_search?: string
+          p_tipo_animal?: string
+        }
+        Returns: {
+          ativo: boolean
+          capacidade_animais: number
+          destaque_mapa: boolean
+          docs_verificados: boolean
+          id: string
+          latitude: number
+          longitude: number
+          media_nota: number
+          nome: string
+          public_id: string
+          regiao_atendimento: string
+          tipo_animal: string
+          tipo_caminhao: string
+          total_avaliacoes: number
+          total_count: number
+          total_fretes: number
         }[]
       }
       has_capability: {
