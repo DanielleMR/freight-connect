@@ -13,6 +13,7 @@ import { useSuspensionCheck } from '@/hooks/useSuspensionCheck';
 import { SuspensionBanner } from '@/components/common/SuspensionBanner';
 import { ArrowLeft, Calendar, DollarSign, Truck, AlertTriangle, UserPlus, Ruler, Eye } from 'lucide-react';
 import { FreteResumo } from '@/components/frete/FreteResumo';
+import { FretePrecoEstimado } from '@/components/frete/FretePrecoEstimado';
 
 interface Transportador {
   id: string;
