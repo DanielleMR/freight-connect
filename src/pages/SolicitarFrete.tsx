@@ -13,6 +13,7 @@ import { useSuspensionCheck } from '@/hooks/useSuspensionCheck';
 import { SuspensionBanner } from '@/components/common/SuspensionBanner';
 import { ArrowLeft, Calendar, DollarSign, Truck, AlertTriangle, UserPlus, Ruler, Eye } from 'lucide-react';
 import { FreteResumo } from '@/components/frete/FreteResumo';
+import { FretePrecoEstimado } from '@/components/frete/FretePrecoEstimado';
 
 interface Transportador {
   id: string;
@@ -304,6 +305,13 @@ export default function SolicitarFrete() {
                   />
                 </div>
               </div>
+
+              {/* Estimador de Preço */}
+              <FretePrecoEstimado
+                distanciaKm={distanciaEstimada ? parseFloat(distanciaEstimada) : undefined}
+                tipoAnimal={tipoAnimal || undefined}
+                quantidade={parseInt(quantidade) || undefined}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="dataPrevista" className="flex items-center gap-1">

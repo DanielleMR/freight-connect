@@ -578,6 +578,42 @@ export type Database = {
         }
         Relationships: []
       }
+      fraud_flags: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          revisado_em: string | null
+          revisado_por: string | null
+          severidade: string
+          status: string
+          tipo_alerta: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          revisado_em?: string | null
+          revisado_por?: string | null
+          severidade?: string
+          status?: string
+          tipo_alerta: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          revisado_em?: string | null
+          revisado_por?: string | null
+          severidade?: string
+          status?: string
+          tipo_alerta?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       freight_assignments: {
         Row: {
           accepted_at: string | null
@@ -701,6 +737,77 @@ export type Database = {
             columns: ["producer_id"]
             isOneToOne: false
             referencedRelation: "producer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      frete_suggestions: {
+        Row: {
+          created_at: string
+          frete_id: string
+          id: string
+          notificado: boolean
+          score: number
+          score_avaliacao: number | null
+          score_fretes: number | null
+          score_proximidade: number | null
+          score_resposta: number | null
+          status: string
+          transportador_id: string
+        }
+        Insert: {
+          created_at?: string
+          frete_id: string
+          id?: string
+          notificado?: boolean
+          score?: number
+          score_avaliacao?: number | null
+          score_fretes?: number | null
+          score_proximidade?: number | null
+          score_resposta?: number | null
+          status?: string
+          transportador_id: string
+        }
+        Update: {
+          created_at?: string
+          frete_id?: string
+          id?: string
+          notificado?: boolean
+          score?: number
+          score_avaliacao?: number | null
+          score_fretes?: number | null
+          score_proximidade?: number | null
+          score_resposta?: number | null
+          status?: string
+          transportador_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "frete_suggestions_frete_id_fkey"
+            columns: ["frete_id"]
+            isOneToOne: false
+            referencedRelation: "fretes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frete_suggestions_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_contato_seguro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frete_suggestions_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportador_listagem"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "frete_suggestions_transportador_id_fkey"
+            columns: ["transportador_id"]
+            isOneToOne: false
+            referencedRelation: "transportadores"
             referencedColumns: ["id"]
           },
         ]
@@ -1632,9 +1739,23 @@ export type Database = {
         Returns: string
       }
       delete_user_data: { Args: { p_user_id: string }; Returns: boolean }
+      detect_fraud_indicators: { Args: never; Returns: number }
       driver_can_accept_freight: {
         Args: { _driver_id: string }
         Returns: boolean
+      }
+      estimate_freight_price: {
+        Args: {
+          p_distancia_km?: number
+          p_quantidade?: number
+          p_tipo_animal?: string
+          p_urgente?: boolean
+        }
+        Returns: {
+          preco_maximo: number
+          preco_medio: number
+          preco_minimo: number
+        }[]
       }
       frete_pode_avancar: { Args: { p_frete_id: string }; Returns: boolean }
       generate_default_frete_id: { Args: never; Returns: string }
@@ -1739,6 +1860,16 @@ export type Database = {
           total_fretes: number
         }[]
       }
+      get_user_risk_score: {
+        Args: { p_user_id: string }
+        Returns: {
+          flags_altos: number
+          flags_criticos: number
+          precisa_revisao: boolean
+          score: number
+          total_flags: number
+        }[]
+      }
       has_capability: {
         Args: {
           _capability: Database["public"]["Enums"]["user_capability"]
@@ -1762,6 +1893,18 @@ export type Database = {
           p_tabela: string
         }
         Returns: string
+      }
+      match_transportadores: {
+        Args: { p_frete_id: string; p_limit?: number }
+        Returns: {
+          nome: string
+          score: number
+          score_avaliacao: number
+          score_fretes: number
+          score_proximidade: number
+          score_resposta: number
+          transportador_id: string
+        }[]
       }
       registrar_auditoria: {
         Args: {
