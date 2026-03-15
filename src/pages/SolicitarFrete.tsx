@@ -306,6 +306,13 @@ export default function SolicitarFrete() {
                 </div>
               </div>
 
+              {/* Estimador de Preço */}
+              <FretePrecoEstimado
+                distanciaKm={distanciaEstimada ? parseFloat(distanciaEstimada) : undefined}
+                tipoAnimal={tipoAnimal || undefined}
+                quantidade={parseInt(quantidade) || undefined}
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="dataPrevista" className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
