@@ -20,28 +20,41 @@ export default function ResetPassword() {
   const [state, setState] = useState<ResetState>('request');
 
   useEffect(() => {
-    // Verificar se há token de reset na URL
-    const accessToken = searchParams.get('access_token');
-    const type = searchParams.get('type');
-    
-    if (accessToken && type === 'recovery') {
-      // Set session with recovery token
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: searchParams.get('refresh_token') || '',
-      }).then(({ error }) => {
+    const handleRecoverySession = async () => {
+      // 🔥 tenta pegar via query
+      let accessToken = searchParams.get('access_token');
+      let refreshToken = searchParams.get('refresh_token');
+      let type = searchParams.get('type');
+
+      // 🔥 tenta pegar via hash (#)
+      if (!accessToken && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        accessToken = hashParams.get('access_token');
+        refreshToken = hashParams.get('refresh_token');
+        type = hashParams.get('type');
+      }
+
+      // 🔐 valida recovery
+      if (accessToken && type === 'recovery') {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
+
         if (error) {
           toast.error('Link de recuperação inválido ou expirado');
           setState('request');
-        } else {
-          setState('reset');
+          return;
         }
-      });
-    }
 
-    // Verificar evento de recovery
+        setState('reset');
+      }
+    };
+
+    handleRecoverySession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event) => {
         if (event === 'PASSWORD_RECOVERY') {
           setState('reset');
         }
@@ -96,7 +109,6 @@ export default function ResetPassword() {
       setState('success');
       toast.success('Senha alterada com sucesso!');
       
-      // Logout after password reset
       await supabase.auth.signOut();
     } catch (error: any) {
       toast.error(error.message || 'Erro ao alterar senha');

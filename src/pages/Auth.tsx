@@ -280,12 +280,22 @@ export default function Auth() {
               />
             </div>
             <div className="flex justify-end">
-              <Button 
-                type="button" 
-                variant="link" 
-                size="sm" 
-                className="text-xs px-0"
-                onClick={() => navigate('/reset-password')}
+              <Button
+                variant="link"
+                onClick={async () => {
+                  const email = prompt("Digite seu email:");
+                  if (!email) return;
+
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+
+                  if (error) {
+                    toast.error(error.message);
+                  } else {
+                    toast.success("Email de recuperação enviado!");
+                  }
+                }}
               >
                 Esqueci minha senha
               </Button>
